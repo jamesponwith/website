@@ -114,6 +114,10 @@ attaches to the same session through `wss://shell.phux.sh/session?attach=CODE`.
   bound it. Do not extend the code's lifetime without revisiting this.
 - Native sessions refuse an attach (`pairing covers the edge shell only`), so a
   future container offering must add its own path rather than inherit this one.
+- `bun run verify:pair [origin]` drives the whole thing in a browser against a
+  live site: the pairing panel, the phone page, the linked state, and a pane
+  spawned on each screen showing up on the other. It talks to the deployed demo
+  Worker, so it only passes where the pairing surface is actually serving.
 
 ### TestFlight access requests (`/api/beta`)
 
@@ -139,14 +143,11 @@ secrets the form still records requests.
 ### The curl installers
 
 `https://phux.sh/install` and `https://phux.sh/install.sh` serve the repo's
-`scripts/install.sh` byte for byte; `https://phux.sh/install-cockpit` and
-`https://phux.sh/install-cockpit.sh` do the same for
-`scripts/install-cockpit.sh`, which installs the frozen Cockpit macOS app
-from the last `cockpit-vX.Y.Z` release assets. `https://phux.sh/install-desktop` and
+`scripts/install.sh` byte for byte; `https://phux.sh/install-desktop` and
 `https://phux.sh/install-desktop.sh` serve `scripts/install-desktop.sh`, which
 installs the GPUI `Phux.app` from `desktop-vX.Y.Z` releases.
-`scripts/sync-docs.ts` copies all three into `public/` on every build and all
-six destinations are gitignored, so a published installer cannot drift from
+`scripts/sync-docs.ts` copies both into `public/` on every build and all
+four destinations are gitignored, so a published installer cannot drift from
 the script the release tests exercise.
 Two real files per installer rather than a redirect, because
 `curl https://phux.sh/install` has to work without `-L`.
@@ -159,7 +160,7 @@ Three things keep that honest. `scripts/check-publish.sh` pins the copy and the
 cache headers in this repo. no-phux/phux `.github/workflows/website-dispatch.yml`
 lists the installer paths, so an installer change dispatches this repo instead
 of leaving phux.sh on the old script. `sync-docs.ts` refuses to publish a
-script whose shebang is not `#!/bin/sh`, and `_headers` caps all six routes at
+script whose shebang is not `#!/bin/sh`, and `_headers` caps all four routes at
 five minutes of edge cache so a fix propagates while somebody is still running
 the broken one.
 

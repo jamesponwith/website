@@ -141,8 +141,8 @@ dependencies = [
 
 [[package]]
 name = "phux-protocol"
-version = "0.74.3"
-source = "git+https://github.com/no-phux/phux?rev=10ef9fd5eaede20aa98f237a89c6f765c962a7a0#10ef9fd5eaede20aa98f237a89c6f765c962a7a0"
+version = "0.78.0"
+source = "git+https://github.com/no-phux/phux?rev=7eaa9cf61909e41d36ef2afa776444b9fde06e7f#7eaa9cf61909e41d36ef2afa776444b9fde06e7f"
 dependencies = [
  "bitflags",
  "bytes",

@@ -51,10 +51,16 @@ sign-in, nothing to press.
   launch or daily budget. The session's own slot, idle clock, and hard expiry
   remain the only limits.
 - Frames are routed per attachment where the wire says so and broadcast
-  otherwise, because every view looks at the same terminals. That terminal has
-  one geometry and `attach` applies the attaching client's viewport, so **only
-  the newest view may resize it** (src/attach-fanout.ts). That is the tmux rule,
-  and it keeps a phone from being handed a shell wider than its screen.
+  otherwise, because every view looks at the same terminals. Frames that answer
+  one *connection* — `HELLO_OK`, `ERROR`, `PONG`, `DETACHED`, a `COMMAND_RESULT`
+  keyed by the requester's id — go only to that view; broadcasting a handshake
+  reply is a protocol error to a client that already greeted. Bootstrap streams
+  stay broadcast: they declare the replica generation each view's output is
+  tagged with, so a view that misses one stops accepting that terminal's output.
+  That terminal has one geometry and `attach` applies the attaching client's
+  viewport, so **only the newest view may resize it** (src/attach-fanout.ts).
+  That is the tmux rule, and it keeps a phone from being handed a shell wider
+  than its screen.
 - A paired view leaving, or timing out on its own idle clock, detaches that view
   only. The session ends when the view that opened it does.
 - The code rides in the pairing page's URL **fragment**, so it never reaches a
@@ -116,15 +122,19 @@ The bytes are the **real phux wire** (`phux-protocol` 0.9). EdgeSession answers
 
 `Dockerfile` builds phux from a checksummed GitHub archive (`PHUX_REVISION`)
 and records the crate version as `PHUX_VERSION`. The final image fails if
-`phux --version` is not exactly `phux $PHUX_VERSION`. `just toolchain-check`
-and `bun test worker/src` require `PHUX_VERSION` to match
-`workspace.package.version`, Zig/libghostty pins to match the repo manifests,
-and the `--version` assertion to stay in the Dockerfile. The release job updates
-the revision, archive checksum, and lockfile hashes together; the required
-workflow gate verifies the pinned source's actual version and lockfile before
-merge. See [release versioning](../../RELEASING.md#versioning) for the refresh
-command and source-commit ordering. Zig/libghostty/Ghostty ARGs must stay
-coherent with that phux revision.
+`phux --version` is not exactly `phux $PHUX_VERSION`. `python3 scripts/ci/site_source_pin.py --check` and `bun test worker/src` require
+the Dockerfile pins to match that source commit, including the `--version`
+assertion. phux release-please does not rewrite this file. After the source
+commit is on no-phux/phux, refresh the revision, archive checksum, and lockfile
+hashes together:
+
+```sh
+PHUX_ROOT=../phux python3 scripts/ci/site_source_pin.py --revision <source-sha>
+```
+
+See [release versioning](https://github.com/no-phux/phux/blob/main/docs/RELEASING.md#versioning)
+for how phux cuts the release this image tracks. Zig/libghostty/Ghostty ARGs
+must stay coherent with that phux revision.
 
 ## Deploy
 

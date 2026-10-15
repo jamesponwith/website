@@ -25,7 +25,13 @@ LIBGHOSTTY_SOURCE = "git+https://github.com/phall1/libghostty-rs.git"
 
 
 def source_checkout() -> Path:
-    """Phux checkout for `--revision`. Tests point ROOT at a fake repo instead."""
+    """Phux checkout for `--revision`.
+
+    CI sets PHUX_ROOT. A unit test that patches ROOT at a fake workspace
+    already has the files it wants read, and that wins over the environment.
+    """
+    if ROOT != Path(__file__).resolve().parents[2]:
+        return ROOT
     override = os.environ.get("PHUX_ROOT")
     return Path(override) if override else ROOT
 

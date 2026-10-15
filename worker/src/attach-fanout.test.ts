@@ -4,7 +4,10 @@ import {
   TYPE_ATTACH,
   TYPE_ATTACHED,
   TYPE_ATTACH_READY,
+  TYPE_BOOTSTRAP_CHUNK,
+  TYPE_COMMAND_RESULT,
   TYPE_ERROR,
+  TYPE_HELLO_OK,
   TYPE_RESIZE_TERMINAL,
 } from "./wire";
 
@@ -43,11 +46,14 @@ function u32(value: number): number[] {
   ];
 }
 
-const attach = (id: number) => frame(TYPE_ATTACH, [[4, u32(id)]]);
+const attach = (id: number) => frame(TYPE_ATTACH, [[5, u32(id)]]);
 const attached = (id: number) => frame(TYPE_ATTACHED, [[3, u32(id)]]);
 const attachReady = (id: number) => frame(TYPE_ATTACH_READY, [[1, u32(id)]]);
 const output = () => frame(0x90, [[1, u32(3)], [3, [104, 105]]]);
 const resize = () => frame(TYPE_RESIZE_TERMINAL, [[1, u32(3)], [2, u32(46)]]);
+const helloOk = () => frame(TYPE_HELLO_OK, [[1, [1]]]);
+const bootstrap = () => frame(TYPE_BOOTSTRAP_CHUNK, [[1, u32(3)], [5, [27, 91, 50, 74]]]);
+const commandResult = () => frame(TYPE_COMMAND_RESULT, [[1, u32(7)], [2, [1]]]);
 
 describe("session view fan-out", () => {
   test("addresses attachment frames to the socket that attached", () => {
@@ -69,11 +75,31 @@ describe("session view fan-out", () => {
     expect(fanout.targets(output(), "phone")).toEqual(["desktop", "phone"]);
   });
 
-  test("sends protocol errors back to the view that caused them", () => {
+  test("sends errors back to the view that caused them", () => {
     const fanout = new ViewFanout<string>();
     fanout.add("desktop", 1);
     fanout.add("phone", 2);
     expect(fanout.targets(frame(TYPE_ERROR, [[2, [1]]]), "phone")).toEqual(["phone"]);
+  });
+
+  test("keeps one view's handshake reply out of the other view", () => {
+    const fanout = new ViewFanout<string>();
+    fanout.add("desktop", 1);
+    fanout.add("phone", 2);
+    // A second HELLO_OK is a protocol error to a client that already greeted.
+    expect(fanout.targets(helloOk(), "phone")).toEqual(["phone"]);
+    // A command result answers the request id of the view that asked.
+    expect(fanout.targets(commandResult(), "phone")).toEqual(["phone"]);
+  });
+
+  test("broadcasts the bootstrap generation every view has to follow", () => {
+    const fanout = new ViewFanout<string>();
+    fanout.add("desktop", 1);
+    fanout.add("phone", 2);
+    // Output is tagged with the generation these frames declare, so a view that
+    // misses one stops accepting that terminal's output entirely.
+    expect(fanout.targets(bootstrap(), "phone")).toEqual(["desktop", "phone"]);
+    expect(fanout.targets(bootstrap(), "desktop")).toEqual(["desktop", "phone"]);
   });
 
   test("lets only the newest connection resize the shared terminal", () => {

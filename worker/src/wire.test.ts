@@ -9,6 +9,10 @@ import {
   TYPE_ERROR,
   TYPE_RESIZE_TERMINAL,
 } from "./wire";
+// The pinned bytes the smoke client sends, which a Rust test keeps in lockstep
+// with the protocol encoder. These are one half of the contract; hand-built
+// frames are the other half and can agree with a wrong field id.
+import { ATTACH_FRAME, HELLO_FRAME } from "../../scripts/phux-wire";
 
 function varint(value: number): number[] {
   const out: number[] = [];
@@ -58,19 +62,26 @@ describe("phux frame reader", () => {
   test("decodes fields, including multi-byte field ids", () => {
     const frameWithWideId = frame(TYPE_ATTACH, [
       [300, [1, 2, 3]],
-      [4, u32(19)],
+      [5, u32(19)],
     ]);
     expect(frameFields(frameWithWideId)).toEqual([
       { id: 300, value: Uint8Array.from([1, 2, 3]) },
-      { id: 4, value: Uint8Array.from(u32(19)) },
+      { id: 5, value: Uint8Array.from(u32(19)) },
     ]);
     expect(attachIdOf(frameWithWideId)).toBe(19);
   });
 
   test("reads the correlation id from ATTACH, ATTACHED and ATTACH_READY", () => {
-    expect(attachIdOf(frame(TYPE_ATTACH, [[4, u32(5000)]]))).toBe(5000);
+    // `field::attach::ATTACH_ID` is 5; field 4 is `scrollback_limit_lines`, and
+    // reading that as an attach id routes an attachment's frames to nobody.
+    expect(attachIdOf(frame(TYPE_ATTACH, [[5, u32(19)]]))).toBe(19);
+    expect(attachIdOf(frame(TYPE_ATTACH, [[4, u32(5000)], [5, u32(1)]]))).toBe(1);
     expect(attachIdOf(frame(TYPE_ATTACHED, [[3, u32(9)]]))).toBe(9);
     expect(attachIdOf(frame(TYPE_ATTACH_READY, [[1, u32(9)]]))).toBe(9);
+  });
+
+  test("a scrollback limit is never mistaken for an attachment", () => {
+    expect(attachIdOf(frame(TYPE_ATTACH, [[4, u32(5000)]]))).toBeUndefined();
   });
 
   test("has no correlation id for session-wide or input frames", () => {
@@ -80,8 +91,16 @@ describe("phux frame reader", () => {
     expect(attachIdOf(frame(TYPE_ERROR, [[2, [1]]]))).toBeUndefined();
   });
 
-  test("tolerates a malformed field stream without throwing", () => {
-    // A field whose declared length runs past the end of the frame.
+  test("reads the real client's pinned ATTACH and HELLO frames", () => {
+    // The encoder is the authority: if the field id this reader uses is wrong,
+    // these pinned bytes disagree, which is how a single-view session silently
+    // stopped attaching in production.
+    expect(frameType(HELLO_FRAME)).toBe(0x01);
+    expect(frameType(ATTACH_FRAME)).toBe(TYPE_ATTACH);
+    expect(attachIdOf(ATTACH_FRAME)).toBe(1);
+  });
+
+  test("tolerates a malformed field stream without throwing", () => {    // A field whose declared length runs past the end of the frame.
     const truncated = Uint8Array.from([0, 0, 0, 7, TYPE_ATTACH, 4, 4, 200, 1]);
     expect(frameFields(truncated)).toEqual([]);
     expect(attachIdOf(truncated)).toBeUndefined();
