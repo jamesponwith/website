@@ -75,18 +75,40 @@ fn horizon(p: vec2f, t: f32) -> vec3f {
   color += tint*exp(-pow(q.y*8.0,2.0)-abs(q.x)*1.1)*0.035;
   return color;
 }
-fn glass_distance(p: vec2f, t: f32, mode: f32) -> f32 {
-  let q = rotate2(p,-0.44+0.11*sin(t*0.05));
-  let curve = 0.30*sin(q.x*1.35+t*0.13)+0.17*sin(q.x*2.8-t*0.085);
-  let width = 0.18+0.075*cos(q.x*1.8+t*0.09);
-  let ribbon = abs(q.y-curve)-width;
-  let lens = length(p*vec2f(0.77,1.12)) - (0.73+0.07*sin(atan2(p.y,p.x)*3.0+t*0.11)*smoothstep(0.12,0.62,length(p)));
-  return mix(ribbon,lens,smoothstep(1.0,2.0,mode));
+struct GlassSurface { distance: f32, gradient: vec2f }
+fn glass_surface(p: vec2f, t: f32, mode: f32) -> GlassSurface {
+  // Exact derivatives replace four additional complete distance evaluations.
+  if (mode < 1.5) {
+    let angle = -0.44+0.11*sin(t*0.05);
+    let q = rotate2(p,angle);
+    let a = q.x*1.35+t*0.13;
+    let b = q.x*2.8-t*0.085;
+    let c = q.x*1.8+t*0.09;
+    let curve = 0.30*sin(a)+0.17*sin(b);
+    let halfWidth = 0.18+0.075*cos(c);
+    let across = q.y-curve;
+    // Match the previous symmetric derivative at the ribbon's medial crease.
+    let side = clamp(across/0.0015,-1.0,1.0);
+    let slope = 0.405*cos(a)+0.476*cos(b);
+    let gradient = rotate2(vec2f(-side*slope+0.135*sin(c),side),-angle);
+    return GlassSurface(abs(across)-halfWidth,gradient);
+  }
+  let radius = length(p);
+  let ellipse = length(p*vec2f(0.77,1.12));
+  let angle = atan2(p.y,p.x);
+  let phase = angle*3.0+t*0.11;
+  let ramp = clamp((radius-0.12)/0.50,0.0,1.0);
+  let smoothing = ramp*ramp*(3.0-2.0*ramp);
+  let radialDerivative = 12.0*ramp*(1.0-ramp);
+  let angularGradient = vec2f(-p.y,p.x)/max(dot(p,p),0.000001);
+  let rimGradient = 0.07*(cos(phase)*3.0*angularGradient*smoothing+sin(phase)*radialDerivative*p/max(radius,0.000001));
+  let gradient = p*vec2f(0.5929,1.2544)/max(ellipse,0.000001)-rimGradient;
+  return GlassSurface(ellipse-(0.73+0.07*sin(phase)*smoothing),gradient);
 }
 fn liquid_glass(p: vec2f, t: f32, mode: f32) -> vec3f {
-  let d = glass_distance(p,t,mode);
-  let epsilon = 0.0015;
-  let gradient = vec2f(glass_distance(p+vec2f(epsilon,0.0),t,mode)-glass_distance(p-vec2f(epsilon,0.0),t,mode),glass_distance(p+vec2f(0.0,epsilon),t,mode)-glass_distance(p-vec2f(0.0,epsilon),t,mode))/(2.0*epsilon);
+  let surface = glass_surface(p,t,mode);
+  let d = surface.distance;
+  let gradient = surface.gradient;
   let inside = 1.0-smoothstep(-0.003,0.003,d);
   let depth = sqrt(max(-d,0.0));
   let normal = normalize(vec3f(gradient*0.70,0.22+depth*1.8));
@@ -169,9 +191,15 @@ fn optical_mode(p: vec2f,t: f32,mode: f32) -> vec3f {
   if (variant<0.5) { sourceMode=0.0; targetMode=0.0; p*=1.05+params.scene.z*0.055; }
   if (variant>1.5 && variant<2.5) { sourceMode=5.0; targetMode=5.0; }
   if (variant>2.5) { sourceMode=3.0; targetMode=3.0; }
-  let a=optical_mode(p,t,sourceMode);
-  var optical=a;
-  if (sourceMode!=targetMode) { optical=mix(a,optical_mode(p,t,targetMode),params.morph.z); }
+  // Also guard here: stale callers must not pay for two modes at either endpoint.
+  var optical: vec3f;
+  if (sourceMode==targetMode || params.morph.z<=0.0) {
+    optical=optical_mode(p,t,sourceMode);
+  } else if (params.morph.z>=1.0) {
+    optical=optical_mode(p,t,targetMode);
+  } else {
+    optical=mix(optical_mode(p,t,sourceMode),optical_mode(p,t,targetMode),params.morph.z);
+  }
   let fog=palette()*exp(-dot(p,p)*0.7)*0.006;
   var color = vec3f(0.0025,0.003,0.005)+optical+fog;
   let grain = (hash(floor(uv*params.topology.xy))-0.5)*0.003;

@@ -87,7 +87,7 @@ export default defineConfig({
     react(),
     mdx({ extendMarkdownConfig: true, syntaxHighlight: false }),
     sitemap({
-      filter: (page) => !page.includes("/embed"),
+      filter: (page) => !page.includes("/embed") && !new URL(page).pathname.startsWith("/concepts/vgpu"),
       serialize(item) {
         const url = new URL(item.url);
         if (isDocsPath(url.pathname)) {

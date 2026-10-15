@@ -165,3 +165,26 @@ describe("host routing", () => {
     expect(routeRequest(preview, urlOn(preview, "/quickstart"))).toEqual({ kind: "asset" });
   });
 });
+
+
+describe("public concept gallery", () => {
+  test("keeps only the VGPU concept on the marketing host, including page aliases", () => {
+    for (const path of ["/concepts/vgpu", "/concepts/vgpu/", "/concepts/vgpu.html", "/concepts/vgpu/index.html", "/concepts/vgpu.md"]) {
+      expect(isDocsPath(path)).toBe(false);
+      expect(isMarketingOnlyPath(path)).toBe(true);
+      expect(routeRequest(SITE_HOST, urlOn(SITE_HOST, `${path}?variant=combo`))).toEqual({ kind: "asset" });
+      expect(routeRequest(DOCS_HOST, urlOn(DOCS_HOST, `${path}?variant=combo`))).toEqual({
+        kind: "redirect", location: `https://${SITE_HOST}${path}?variant=combo`, status: 301,
+      });
+    }
+  });
+  test("preserves the concepts documentation and similarly named pages", () => {
+    for (const path of ["/concepts", "/concepts/sessions", "/concepts/vgpu-old", "/concepts/vgpu-notes.html"]) {
+      expect(isDocsPath(path)).toBe(true);
+      expect(isMarketingOnlyPath(path)).toBe(false);
+      expect(routeRequest(SITE_HOST, urlOn(SITE_HOST, path))).toEqual({
+        kind: "redirect", location: `https://${DOCS_HOST}${path}`, status: 301,
+      });
+    }
+  });
+});

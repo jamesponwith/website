@@ -1,3 +1,4 @@
+import { isBrowserConcept } from "./transport";
 import { useEffect, useRef, useState } from "react";
 import { Scene, initialSettings, type SceneSettings } from "./Scene";
 import { LiveStatus } from "./Pipes";
@@ -33,6 +34,6 @@ export default function FederationStage({runtime}:{runtime:RuntimeControl}){
       </div>
       <div className="federation-inspection"><div className="envelope-column"><div className="envelope-tabs" role="group" aria-label="Choose message type">{envelopeTypes.map(type=><button key={type} onClick={()=>{setKind(type);setStep(-1);}} aria-pressed={kind===type}>{type}</button>)}</div><pre><span className="json-comment">{'// ONE ENVELOPE. DIFFERENT PAYLOADS.\n'}</span>{JSON.stringify({from:"browser",to:`${item.host}/${item.id}`,kind,payload:payloads[kind]},null,2)}</pre></div><div className="route-explanation"><span className="eyebrow">{item.kind} / {item.host.toUpperCase()}</span><h2>{item.name}</h2><p>{item.note}</p><button className="primary-button" onClick={trace}>{step<0||step===3?"Follow this message":"Following the message…"}<span>→</span></button><div className="route-progress">{["client","phux","host","workload"].map((name,i)=><span key={name} className={step>=i?"reached":""}><i/>{name}</span>)}</div></div></div>
     </div>
-    <div className="federation-coda"><h2>Work and play.<br/><em>On the same pipes.</em></h2><div><LiveStatus state={runtime.state}>The local light instrument is live</LiveStatus><p>This map illustrates federation. The live instrument shows the same idea with an actual native process and independent browser views.</p></div></div>
+    <div className="federation-coda"><h2>Work and play.<br/><em>On the same pipes.</em></h2><div><LiveStatus state={runtime.state}>The local light instrument is live</LiveStatus><p>{isBrowserConcept?"This map illustrates federation. The public instrument runs real browser computation; these hosts and workloads are an architectural concept.":"This map illustrates federation. The live instrument shows the same idea with an actual native process and independent browser views."}</p></div></div>
   </div>;
 }

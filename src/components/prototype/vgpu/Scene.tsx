@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import type { Gpu } from "vgpu";
+import { gpuPool, opticalBackingSize, opticalFrameDeadline, startOpticalWarmup } from "./gpu-runtime";
+import { createRenderMetrics } from "./gpu-metrics";
 import atmosphere from "./atmosphere.wgsl";
 
 type Vector = [number, number, number];
@@ -9,7 +10,7 @@ export type SceneSettings = {
 };
 export const initialSettings: SceneSettings = { speed: 1, amplitude: 1, shape: 0, color: [0.96, 0.60, 0.29], burst: 0, paused: false };
 type Pointer = { x: number; y: number; active: number };
-type SceneProps = { variant: number; settings: MutableRefObject<SceneSettings>; detached?: boolean; miniature?: boolean };
+type SceneProps = { variant: number; settings: MutableRefObject<SceneSettings>; detached?: boolean; miniature?: boolean; active?: boolean; ambient?: boolean; input?:MutableRefObject<Pointer> };
 const ease = (x: number) => x * x * (3 - 2 * x);
 const blend = (a: number, b: number, f: number) => a + (b - a) * f;
 const shapeIndex = (shape: number) => Math.max(0, Math.min(5, Math.round(shape)));
@@ -39,6 +40,7 @@ function createMotion(initial: SceneSettings) {
     // Finish an in-flight morph before accepting another, preserving continuity.
     if (progress >= 1 && requested !== to) { from = to; to = requested; progress = 0; }
     progress = reduced ? 1 : Math.min(1, progress + dt / 1.45);
+    if (progress >= 1) from = to;
     const smoothing = reduced ? 1 : 1 - Math.exp(-dt * 4);
     amplitude = blend(amplitude, state.amplitude, smoothing);
     spread = blend(spread, Number(detached), smoothing);
@@ -52,23 +54,46 @@ function createMotion(initial: SceneSettings) {
 }
 type Motion = ReturnType<ReturnType<typeof createMotion>>;
 
-export function Scene({ variant, settings, detached = false, miniature = false }: SceneProps) {
+export function Scene({ variant, settings, detached = false, miniature = false, active = true, ambient = false, input }: SceneProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const fallback = useRef<HTMLCanvasElement>(null);
+  const activeRef = useRef(active);
+  activeRef.current = active;
   const detachedRef = useRef(detached);
   detachedRef.current = detached;
   const [renderer, setRenderer] = useState("Preparing light field");
   const [ready, setReady] = useState(false);
   useEffect(() => {
     let disposed = false, fallbackStarted = false, onScreen = true;
-    let gpu: Gpu | undefined;
+    let cancelWarmup = () => {};
+    let releaseGpu = () => {}, disposeSurface = () => {}, disposeField = () => {}, disposeMetrics = () => {};
     let stop = () => {}, fallbackStop = () => {}, removeErrorListener = () => {};
+    const cleanupGpu = () => {
+      stop(); removeErrorListener(); disposeMetrics(); disposeField(); disposeSurface(); releaseGpu();
+      stop = removeErrorListener = disposeMetrics = disposeField = disposeSurface = releaseGpu = () => {};
+    };
     const element = canvas.current!;
+    const bootStartedAt = performance.now();
+    let stageStartedAt = bootStartedAt, stage = "";
+    const bootStage = (next: string) => {
+      const now = performance.now();
+      for (const node of [element,element.parentElement!]) {
+        if (stage) node.dataset[`boot${stage[0].toUpperCase()+stage.slice(1)}Ms`] = (now-stageStartedAt).toFixed(1);
+        node.dataset.bootStage = next;
+        node.dataset.bootStartedAt = bootStartedAt.toFixed(1);
+        node.dataset.bootStageStartedAt = now.toFixed(1);
+        node.dataset.bootElapsedMs = (now-bootStartedAt).toFixed(1);
+      }
+      stage = next; stageStartedAt = now;
+    };
     const visibility = new IntersectionObserver(entries => { onScreen = entries[0]?.isIntersecting ?? false; }, { rootMargin: "120px" });
     visibility.observe(element);
+    let resizeDirty = true;
+    const resize = new ResizeObserver(() => { resizeDirty = true; });
+    resize.observe(element);
     element.style.opacity = "1";
-    setReady(false);
-    const pointer: Pointer = { x: 0, y: 0, active: 0 };
+    setReady(false); setRenderer("Preparing light field");
+    const pointer: Pointer = input?.current || { x: 0, y: 0, active: 0 };
     const move = (event: PointerEvent) => {
       const box = element.getBoundingClientRect();
       pointer.x = (event.clientX - box.left) / Math.max(box.width, 1) * 2 - 1;
@@ -79,25 +104,44 @@ export function Scene({ variant, settings, detached = false, miniature = false }
     element.addEventListener("pointermove", move);
     element.addEventListener("pointerleave", leave);
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    const showCanvas = (label: string) => {
+      if (disposed) return;
+      fallbackStop();
+      element.style.opacity = "0";
+      setRenderer(label);
+      fallbackStop = drawFallback(fallback.current!, variant, settings, detachedRef, pointer, reduced, miniature, () => onScreen && activeRef.current, () => { if (!disposed) setReady(true); });
+    };
     const useFallback = (error: unknown) => {
       if (disposed || fallbackStarted) return;
       fallbackStarted = true;
-      setReady(false);
-      stop(); removeErrorListener(); gpu?.dispose();
+      cancelWarmup();
+      cleanupGpu(); bootStage("fallback");
+      element.parentElement!.dataset.bootPreview = "canvas";
       console.info("PHUX light field: using Canvas renderer", error);
-      element.style.opacity = "0";
-      setRenderer("Canvas · optical field");
-      fallbackStop = drawFallback(fallback.current!, variant, settings, detachedRef, pointer, reduced, miniature, () => onScreen, () => { if (!disposed) setReady(true); });
+      showCanvas("Canvas · optical field");
     };
     const boot = async () => {
-      const { init, surface, effect, frame, frameLoop } = await import("vgpu");
-      if (disposed) return;
-      const context = await init({ powerPreference: "low-power" });
-      gpu = context;
-      if (disposed) { context.dispose(); return; }
+      bootStage("import");
+      const { surface, effect, frame, timer } = await import("vgpu");
+      if (disposed || fallbackStarted) return;
+      bootStage("acquire");
+      const lease = await gpuPool.acquire();
+      const context = lease.gpu;
+      releaseGpu = lease.release;
+      if (disposed || fallbackStarted) { releaseGpu(); return; }
       void context.lost.then(info => { if (!disposed && info.reason !== "destroyed") useFallback(info.message); });
-      const target = surface(context, element, { dpr: [1, miniature ? 1 : 1.25] });
-      const motion = createMotion(settings.current);
+      let cssWidth = element.clientWidth, cssHeight = element.clientHeight, lastDpr = devicePixelRatio;
+      const desiredSize = () => {
+        cssWidth = element.clientWidth; cssHeight = element.clientHeight;
+        return opticalBackingSize(cssWidth,cssHeight,devicePixelRatio,ambient,miniature);
+      };
+      bootStage("surface");
+      const target = surface(context, element, { autoResize: false, size: desiredSize() });
+      disposeSurface = () => target.dispose();
+      const gpuTimer = context.gpu.features.has("timestamp-query") ? timer(context) : undefined;
+      const metrics = createRenderMetrics(element, lease.id, gpuTimer);
+      disposeMetrics = () => metrics.dispose();
+      let motion = createMotion(settings.current);
       const current = motion(settings.current, detachedRef.current, pointer, reduced.matches);
       const rect = element.getBoundingClientRect();
       const data = {
@@ -105,45 +149,90 @@ export function Scene({ variant, settings, detached = false, miniature = false }
         scene: [current.amplitude, current.to, current.spread, miniature ? 0.72 : 0.82],
         color: [...current.color, 1], pointer: [0, 0, 0, 0],
         morph: [current.from, current.to, current.progress, 0],
-        topology: [Math.max(rect.width,1), Math.max(rect.height,1), 0, 0],
+        topology: [Math.max(cssWidth,1), Math.max(cssHeight,1), 0, 0],
       };
       const field = effect(context, atmosphere, { set: { params: data } });
+      disposeField = () => field.dispose();
+      bootStage("compile");
       await field.compile(target);
       if (disposed || fallbackStarted) return;
-      frame(context, currentFrame => currentFrame.pass(target, pass => { pass.draw(field); }));
-      await context.settled();
+      motion = createMotion(settings.current);
+      const first = motion(settings.current,detachedRef.current,pointer,reduced.matches);
+      data.timing[0] = first.time; data.scene[0] = first.amplitude;
+      data.color = [...first.color,1]; data.morph = [first.from,first.to,first.progress,0];
+      field.set({params:data});
+      const submitted = frame(context, currentFrame => currentFrame.pass(target, field));
+      bootStage("settled");
+      await submitted.done;
+      bootStage("queue");
       await context.gpu.queue.onSubmittedWorkDone();
       if (disposed || fallbackStarted) return;
+      cancelWarmup();
+      fallbackStop(); fallbackStop = () => {};
+      element.style.opacity = "1";
+      bootStage("ready");
+      element.parentElement!.dataset.bootPreview = "webgpu";
       setReady(true);
       setRenderer("vgpu · WebGPU · optical field");
       removeErrorListener = context.onError(error => useFallback(error));
-      const loop = frameLoop(context, currentFrame => {
+      let raf = 0, nextFrame = 0, lastStaticKey = "";
+      const drawCurrentState = (now: number) => {
+        const cpuStart = performance.now();
         const state = settings.current;
         const current = motion(state, detachedRef.current, pointer, reduced.matches);
-        if (document.hidden || !onScreen) return;
-        const size = target.size;
-        data.timing = [current.time, size[0] / Math.max(size[1], 1), variant, 0];
-        data.scene = [current.amplitude, current.to, current.spread, miniature ? 0.72 : 0.82];
-        data.color = [...current.color, 1];
-        data.pointer = [current.pointer.x, current.pointer.y, current.pointer.active, current.burst];
-        data.morph = [current.from, current.to, current.progress, 0];
+        // A paused/reduced-motion view renders on changes instead of submitting empty frames.
+        let staticKey = "";
+        if (state.paused || reduced.matches) {
+          staticKey = [current.from,current.to,current.progress,current.amplitude,current.spread,...current.color,current.pointer.x,current.pointer.y,current.burst].map(value => value.toFixed(5)).join("/");
+          if (staticKey === lastStaticKey && !resizeDirty) { metrics.idle(); return; }
+        }
+        lastStaticKey = staticKey;
+        if (resizeDirty) target.resize(desiredSize());
+        frame(context, currentFrame => {
+          const size = target.size;
+          data.timing = [current.time, size[0] / Math.max(size[1], 1), variant, 0];
+          data.scene = [current.amplitude, current.to, current.spread, miniature ? 0.72 : 0.82];
+          data.color = [...current.color, 1];
+          data.pointer = [current.pointer.x, current.pointer.y, current.pointer.active, current.burst];
+          data.morph = [current.from, current.to, current.progress, 0];
+          data.topology = [Math.max(cssWidth,1), Math.max(cssHeight,1), 0, 0];
+          field.set({ params: data });
+          currentFrame.pass({ target, timer: metrics.sample(now) }, field);
+        });
+        resizeDirty = false;
         element.dataset.shape = String(current.to);
         element.dataset.morph = current.progress.toFixed(3);
-        data.topology = [size[0], size[1], 0, 0];
-        field.set({ params: data });
-        currentFrame.pass(target, pass => { pass.draw(field); });
-      }, { fps: reduced.matches ? 12 : miniature ? 24 : 60 });
-      stop = () => loop.stop();
+        metrics.submitted(now, performance.now()-cpuStart);
+      };
+      const render = (now: number) => {
+        raf = requestAnimationFrame(render);
+        if (lastDpr !== devicePixelRatio) { lastDpr = devicePixelRatio; resizeDirty = true; }
+        if (document.hidden || !onScreen || !activeRef.current) { metrics.idle(); return; }
+        const interval = reduced.matches ? 1000/12 : miniature ? 1000/24 : 1000/60;
+        const deadline = opticalFrameDeadline(now,nextFrame,interval);
+        if (deadline === undefined) return;
+        nextFrame = deadline;
+        try { drawCurrentState(now); }
+        catch (error) { useFallback(error); }
+      };
+      raf = requestAnimationFrame(render);
+      stop = () => cancelAnimationFrame(raf);
     };
-    void boot().catch(useFallback);
+    const warmup = startOpticalWarmup(() => {
+      if (disposed || fallbackStarted) return;
+      element.parentElement!.dataset.bootPreview = "canvas-warmup";
+      showCanvas("Canvas · warming WebGPU");
+    });
+    cancelWarmup = warmup.cancel;
+    void warmup.during(boot()).catch(useFallback);
     return () => {
-      disposed = true;
-      visibility.disconnect();
-      stop(); fallbackStop(); removeErrorListener(); gpu?.dispose();
+      disposed = true; cancelWarmup();
+      visibility.disconnect(); resize.disconnect();
+      cleanupGpu(); fallbackStop();
       element.removeEventListener("pointermove", move);
       element.removeEventListener("pointerleave", leave);
     };
-  }, [variant, miniature, settings]);
+  }, [variant, miniature, ambient, settings, input]);
   return <div className="gpu-scene" data-renderer={renderer} data-ready={ready}>
     <canvas ref={fallback} className="scene-fallback" aria-hidden="true" />
     <canvas ref={canvas} aria-label="Live refractive light field; move the pointer to bend its horizon" />
