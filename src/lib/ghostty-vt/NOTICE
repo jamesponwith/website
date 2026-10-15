@@ -1,0 +1,7 @@
+libghostty-vt
+Copyright (c) 2024 Mitchell Hashimoto, Ghostty contributors
+Distributed under the MIT License; see LICENSE.
+
+The accompanying engine artifact is copied without modification from PHUX's
+verified standalone ghostty-vt.wasm build. Adapter ABI structure follows PHUX
+clients/phux-vt-web (Copyright 2026 phall, Apache License 2.0).

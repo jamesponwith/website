@@ -1,3 +1,5 @@
+import GhosttySurface from "./GhosttySurface";
+import { sceneFrame } from "./terminal-frames";
 import { isBrowserConcept } from "./transport";
 // A live local fabric: native sessions, independent host processes, optical views.
 import { useEffect, useState, type CSSProperties, type FormEvent, type PointerEvent } from "react";
@@ -32,6 +34,7 @@ export default function SuperDemo({runtime,openTerminal}:{runtime:RuntimeControl
         <div className="surface-light-edge"/>
         <div className="surface-heading"><span><i className={runtime.state.connected?'status-dot':'status-dot offline'}/>studio <small>/ light</small></span><div><button className="surface-material" onClick={()=>setMaterial(v=>!v)} aria-label="Adjust glass material" aria-expanded={material} title="Glass material">◐</button><button className="surface-close hover-control" onClick={()=>setAttached(false)} aria-label="Close workspace view">×</button></div></div>
         <div className="surface-output"><Scene variant={1} settings={settings} active={attached} input={exploration.pointer}/></div>
+        {exploration.engaged&&<GhosttySurface className="surface-program" vt={sceneFrame(runtime.state)} label="Optical scene live terminal output" fontSize={10} active={attached}/>}
         <div className="surface-message"><span className="surface-message-glyph">↗</span><p>{runtime.state.lastIntent?.text||'Your scene is running.'}</p></div>
         <div className="surface-footer"><button onClick={openTerminal} aria-label={isBrowserConcept?"Inspect browser runtime":"Open the native terminal"} title={isBrowserConcept?"Inspect browser runtime":"Native terminal"}>⌘</button><span>{formNames[runtime.state.shape]}<i/>{runtime.state.color}<i/>{runtime.state.speed}×</span><button className="surface-branch" onClick={()=>void fabric.addSession()} disabled={fabric.pending||!available} aria-label="Branch another workload" title="Branch a session">＋</button></div>
       </div>
