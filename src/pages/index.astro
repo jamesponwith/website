@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import AuthReturn from "../components/AuthReturn.astro";
 import HeroDemo from "../components/HeroDemo";
+import HomeHeroSwitch from "../components/HomeHeroSwitch.astro";
 import { SITE, docsHref } from "../lib/site";
 import release from "../lib/release.json";
 
@@ -41,7 +42,8 @@ const projectLinks = [
 
 <BaseLayout minimal>
   <AuthReturn slot="head" />
-  <div class="home">
+  <HomeHeroSwitch>
+  <div class="home" data-classic-home>
     <section class="hero" aria-labelledby="product-name">
       <h1 id="product-name">{SITE.name}</h1>
       <div class="install" id="install" data-install aria-label="Install phux">
@@ -123,6 +125,7 @@ const projectLinks = [
       <HeroDemo client:load wsUrl={SITE.demoWsUrl} />
     </section>
   </div>
+  </HomeHeroSwitch>
   <div hidden data-webmcp data-product={SITE.name} data-cli={cliInstall}
     data-desktop={desktopInstall} data-docs={SITE.docsUrl}
     data-release-tag={release.tag} data-release-url={release.url}></div>
