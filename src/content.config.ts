@@ -31,8 +31,10 @@ const docs = defineCollection({
     // Sort order within the group.
     order: z.number().default(0),
     // Source path in the phux repo (e.g. "docs/spec/L1.md") — shown as
-    // provenance / "edit on GitHub" target.
+    // provenance / "edit on GitHub" target. Overview is this repo; it sets
+    // sourceBase to https://github.com/no-phux/website.
     sourcePath: z.string(),
+    sourceBase: z.string().optional(),
     // Immutable provenance for the exact upstream checkout used by this build.
     sourceRevision: z.string().regex(/^[0-9a-f]{40}$/i),
     protocolVersion: z.string(),

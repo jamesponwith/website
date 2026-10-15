@@ -35,17 +35,12 @@
  * `bun run sync-docs` always produces the same tree from the same source.
  *
  * Env:
- *   PHUX_DOCS_DIR  — phux `docs/` dir. Default: `..` — the site lives at
- *                    `docs/site/` inside the phux repo, so the docs tree is
- *                    one level up. Override only for exotic checkouts.
+ *   PHUX_ROOT      — phux checkout. Default: ../../phux or ../phux.
+ *   PHUX_DOCS_DIR  — phux `docs/` dir. Default: `$PHUX_ROOT/docs`.
  *
- * CI / rebuild trigger:
- *
- *   Site and docs share one repository, so `.github/workflows/deploy-site.yml`
- *   at the repo root rebuilds and deploys on every push that touches `docs/**`
- *   or `../../adr/**`. No cross-repo dispatch, no scheduled drift polling.
- *
- *   For local dev, PHUX_DOCS_DIR defaults to `../` and Just Works.
+ * CI checks out no-phux/phux and sets PHUX_ROOT. A push to phux that changes
+ * docs, installers, or product skills dispatches this repo; the weekly cron
+ * is the backstop.
  * ---------------------------------------------------------------------------
  */
 
@@ -53,12 +48,13 @@ import { execFileSync } from "node:child_process";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { AGENT_START, OVERVIEW, SITE } from "../src/lib/site";
+import { phuxRoot } from "./phux-root";
 
 const ROOT = resolve(import.meta.dir, "..");
-const DOCS_DIR = resolve(ROOT, process.env.PHUX_DOCS_DIR ?? "..");
+const PHUX_ROOT = phuxRoot(ROOT);
+const DOCS_DIR = process.env.PHUX_DOCS_DIR ? resolve(process.env.PHUX_DOCS_DIR) : join(PHUX_ROOT, "docs");
 // ADRs live under docs/adr/.
 const ADR_DIR = resolve(DOCS_DIR, "adr");
-const PHUX_ROOT = resolve(DOCS_DIR, "..");
 const OUT_DIR = join(ROOT, "src/content/docs/_synced");
 const MANIFEST_PATH = join(ROOT, "public/docs-manifest.json");
 
@@ -87,6 +83,12 @@ function sourceRevision(): string {
     process.env.PHUX_SOURCE_REVISION ??
     execFileSync("git", ["-C", PHUX_ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   if (!/^[0-9a-f]{40}$/i.test(revision)) throw new Error(`invalid phux source revision: ${revision}`);
+  return revision;
+}
+
+function siteRevision(): string {
+  const revision = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  if (!/^[0-9a-f]{40}$/i.test(revision)) throw new Error(`invalid site revision: ${revision}`);
   return revision;
 }
 
@@ -619,8 +621,9 @@ ${AGENT_START.prompt}
     `description: ${yamlString(summary)}`,
     `group: ${yamlString(GROUPS.start)}`,
     `order: -1`,
-    `sourcePath: ${yamlString("docs/site/src/pages/overview.astro")}`,
-    `sourceRevision: ${yamlString(SOURCE_REVISION)}`,
+    `sourcePath: ${yamlString("src/pages/overview.astro")}`,
+    `sourceBase: ${yamlString("https://github.com/no-phux/website")}`,
+    `sourceRevision: ${yamlString(siteRevision())}`,
     `protocolVersion: ${yamlString(versions.protocolVersion)}`,
     `projectVersion: ${yamlString(versions.projectVersion)}`,
     `stability: ${yamlString("stable")}`,

@@ -12,11 +12,11 @@ export async function getStaticPaths() {
 
 export const GET: APIRoute = ({ props }) => {
   const page = props.page as CollectionEntry<"docs">;
-  const { title, summary, sourcePath, sourceRevision, projectVersion, protocolVersion, stability } = page.data;
+  const { title, summary, sourcePath, sourceBase, sourceRevision, projectVersion, protocolVersion, stability } = page.data;
   const metadata = {
     title,
     url: `${SITE.docsUrl}/${page.id}`,
-    source: `${SITE.github}/blob/${sourceRevision}/${sourcePath}`,
+    source: `${sourceBase ?? SITE.github}/blob/${sourceRevision}/${sourcePath}`,
     projectVersion,
     protocolVersion,
     stability,

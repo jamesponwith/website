@@ -145,15 +145,15 @@ describe("native container configuration", () => {
   });
 
   test("pins installed phux --version to the workspace release", async () => {
+    const { phuxRoot } = await import("../../scripts/phux-root.ts");
+    const { join } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const phux = phuxRoot(fileURLToPath(new URL("../..", import.meta.url)));
     const dockerfile = await Bun.file(
       new URL("../Dockerfile", import.meta.url),
     ).text();
-    const cargo = await Bun.file(
-      new URL("../../../../Cargo.toml", import.meta.url),
-    ).text();
-    const zigPins = await Bun.file(
-      new URL("../../../../.config/zig-toolchain.json", import.meta.url),
-    ).json() as {
+    const cargo = await Bun.file(join(phux, "Cargo.toml")).text();
+    const zigPins = await Bun.file(join(phux, ".config/zig-toolchain.json")).json() as {
       version: string;
       archives: { "x86_64-linux": { sha256: string } };
     };

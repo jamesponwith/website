@@ -15,8 +15,10 @@
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { phuxRoot } from "./phux-root";
 
-const ROOT = resolve(import.meta.dirname, "../../.."); // the phux repo root
+const SITE_ROOT = resolve(import.meta.dirname, "..");
+const ROOT = phuxRoot(SITE_ROOT);
 const SKILLS_DIR = join(ROOT, ".agents", "skills");
 const OUT_DIR = resolve(import.meta.dirname, "../public/.well-known/agent-skills");
 const ALLOWLIST = join(ROOT, "scripts", "product-skills");

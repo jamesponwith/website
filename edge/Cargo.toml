@@ -5,7 +5,7 @@ version = "0.0.0"
 edition = "2024"
 rust-version = "1.99"
 license = "Apache-2.0"
-repository = "https://github.com/no-phux/phux"
+repository = "https://github.com/no-phux/website"
 publish = false
 
 # Standalone workspace (wasm-only); the site tree has no cargo workspace of
@@ -16,9 +16,10 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# In-tree wire codec so the committed edge artifact tracks workspace protocol 0.9
-# instead of a stale git-main pin. Default features are wasm-safe (ADR-0024).
-phux-protocol = { path = "../../../crates/phux-protocol" }
+# Pinned phux commit. The committed worker/edge wasm is what deploys; rebuild
+# with scripts/build-edge.sh after moving this rev. Default features are
+# wasm-safe (ADR-0024).
+phux-protocol = { git = "https://github.com/no-phux/phux", rev = "10ef9fd5eaede20aa98f237a89c6f765c962a7a0" }
 wasm-bindgen = "=0.2.129"
 js-sys = "0.3"
 bytes = "1"

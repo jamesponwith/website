@@ -1,5 +1,8 @@
 # build output
 dist/
+
+# optional local phux checkout used when PHUX_ROOT=./phux
+/phux/
 .astro/
 
 # deps

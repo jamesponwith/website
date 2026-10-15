@@ -36,7 +36,7 @@ const toc: TOCItemType[] = headings.filter((heading) => heading.depth >= 2 && he
   url: `#${heading.slug}`,
 }));
 
-const sourceUrl = `${SITE.github}/blob/${page.data.sourceRevision}/${page.data.sourcePath}`;
+const sourceUrl = `${page.data.sourceBase ?? SITE.github}/blob/${page.data.sourceRevision}/${page.data.sourcePath}`;
 const title = `${SITE.name} — ${page.data.title}`;
 const description = page.data.description || SITE.description;
 // Static `format: file` builds render this route as `/wire.html`; the public

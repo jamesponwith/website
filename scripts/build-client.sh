@@ -11,7 +11,14 @@
 set -euo pipefail
 
 SITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PHUX_DIR="${PHUX_DIR:-$(cd "$SITE_DIR/../.." && pwd)}"
+if [ -z "${PHUX_DIR:-}${PHUX_ROOT:-}" ]; then
+  if [ -d "$SITE_DIR/../../phux/clients/phux-web" ]; then
+    PHUX_DIR="$(cd "$SITE_DIR/../../phux" && pwd)"
+  elif [ -d "$SITE_DIR/../phux/clients/phux-web" ]; then
+    PHUX_DIR="$(cd "$SITE_DIR/../phux" && pwd)"
+  fi
+fi
+PHUX_DIR="${PHUX_DIR:-${PHUX_ROOT:-}}"
 OUT="$SITE_DIR/src/lib/phux-web"
 
 echo "phux repo:  $PHUX_DIR"

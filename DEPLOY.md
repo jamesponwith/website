@@ -23,7 +23,7 @@ for the site, `demo.run.ts` for the demo); see `infra/README.md`.
 
 A Workers static-assets worker (`phux-site`, declared in
 `infra/alchemy.run.ts`) with a small host router (`host/index.ts`). Deploys
-via `site-deploy.yml` at the phux repo root, or manually with `bun run deploy`
+via `.github/workflows/site-deploy.yml`, or manually with `bun run deploy`
 (`alchemy deploy --stage prod --profile phux`; see `infra/README.md`). Build
 `bun run build`, output `dist`; the wasm client is committed under
 `src/lib/phux-web/`, so no Rust/Zig is needed. Custom domains `phux.sh`
@@ -155,11 +155,13 @@ The installers and homepage badges compare numeric component versions across
 the bounded recent release index. They do not trust GitHub's list order:
 an older alpha can appear before a newer one, including alpha.9 before alpha.10.
 
-Three things keep that honest, all pinned by `scripts/check-install-surface.sh`:
-`site-deploy.yml` lists the scripts in its path filter (or an installer
-fix never redeploys the site), `sync-docs.ts` refuses to publish a script whose
-shebang is not `#!/bin/sh`, and `_headers` caps all six routes at five minutes
-of edge cache so a fix propagates while somebody is still running the broken one.
+Three things keep that honest. `scripts/check-publish.sh` pins the copy and the
+cache headers in this repo. no-phux/phux `.github/workflows/website-dispatch.yml`
+lists the installer paths, so an installer change dispatches this repo instead
+of leaving phux.sh on the old script. `sync-docs.ts` refuses to publish a
+script whose shebang is not `#!/bin/sh`, and `_headers` caps all six routes at
+five minutes of edge cache so a fix propagates while somebody is still running
+the broken one.
 
 ## 2. The backend → Worker + Durable Objects
 
@@ -181,12 +183,13 @@ bun run build:edge        # needs rust 1.99 + wasm-pack (phux nix devshell), →
 
 ## Push-to-deploy (GitHub Actions)
 
-All site workflows live at the phux repo root (`.github/workflows/site-*.yml`);
-paths are scoped to `docs/site/**`.
+Site workflows live in this repo (`.github/workflows/site-*.yml`). Docs and
+installers live in no-phux/phux. A push there that changes them dispatches
+`phux-content` at this repo, which checks phux out and rebuilds.
 
 - **`site-deploy.yml`** → site (Workers static assets on phux.sh) on every push
-  touching `docs/**` (docs and site share one repo, so doc edits
-  rebuild the site directly); manual dispatch is available.
+  to this repo, on `phux-content`, and on the Monday cron. Manual dispatch is
+  available.
 - **`site-deploy-worker.yml`** → validates, records the prior version, deploys, then
   exercises native and same-IP edge fallback.
 - **`site-native-monitor.yml`** → six-hour exact-wire native synthetic; manual dispatch
