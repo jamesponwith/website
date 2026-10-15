@@ -98,7 +98,7 @@ describe("policy response execution", () => {
     }
     await Promise.all(pending);
     expect(events).toHaveLength(3);
-    expect(events[0]).toMatchObject({ kind: "tripwire", trap: "env", query: "?sample=1", status: 200 });
+    expect(events[0]).toMatchObject({ kind: "tripwire", trap: "env", query: "?sample=1", status: 200, content_type: "text/plain; charset=utf-8" });
     expect(events[0]!.member_id).toBeUndefined();
     const headers = JSON.parse(events[0]!.headers as string);
     expect(headers["x-scan"]).toBe("test");

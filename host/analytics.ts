@@ -86,7 +86,7 @@ export interface Envelope {
   colo?: string;
   tls_version?: string;
   http_version?: string;
-  /** Sanitized JSON: every request header except identity/credential ones. */
+  /** Allowlisted request metadata only; excludes identity/credential headers. */
   headers?: string;
   body_sample?: string;
 }
@@ -170,7 +170,7 @@ export const buildTripwireEnvelope = Effect.fnUntraced(function*(
 ): Effect.fn.Return<Envelope> {
   const base = yield* buildEnvelope(
     request,
-    new Response(null, { status: init.status }),
+    new Response(null, { status: init.status, headers: init.contentType ? { "content-type": init.contentType } : undefined }),
   );
   const cf = (request as Request & { cf?: TripwireCf }).cf;
   return {
