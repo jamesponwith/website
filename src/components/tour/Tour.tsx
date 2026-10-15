@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { docsHref } from "../../lib/site";
 import {
   CHAPTERS,
   advanceTour,
@@ -153,7 +152,7 @@ function Lines({ pane, prompt = false }: { pane: Pane; prompt?: boolean }) {
           {line.typing && <b className="tour-caret" />}
         </span>
       ))}
-      {prompt && !typing && <span className="is-cmd">$ <b className="tour-caret" /></span>}
+      {prompt && !typing && <span className="is-cmd">studio &gt; <b className="tour-caret" /></span>}
     </div>
   );
 }
@@ -391,13 +390,6 @@ export default function Tour({ prepare, suspended = false }: { prepare?: () => v
   return (
     <div ref={root} className="tour" data-pace={position.pace} data-chapter={chapter.id} data-playing={playing && !reduced && visible && !suspended}>
       <div className="tour-frame terminal-surface">
-        <header className="tour-heading">
-          <div>
-            <p className="tour-eyebrow">The phux workflow <span>0{position.chapter + 1} / 0{CHAPTERS.length}</span></p>
-            <h3 key={chapter.id}>{chapter.title}</h3>
-          </div>
-          <span className="tour-illustration">Illustrated tour</span>
-        </header>
         <div className="tour-canvas" onPointerEnter={prepare}>
           <div className="tour-stage" aria-hidden="true">
             <DistantHosts />
@@ -411,14 +403,8 @@ export default function Tour({ prepare, suspended = false }: { prepare?: () => v
             <Edges layout={WIDE} frame={frame} className="is-wide" signals />
             <Edges layout={NARROW} frame={frame} className="is-narrow" signals />
           </div>
-          <a className="tour-entry" href="/embed" data-demo-launch onFocus={prepare} aria-label="Open terminal demo">
-            <span className="tour-invitation">
-              <span className="tour-invitation-copy">
-                <span className="tour-invitation-glyph" aria-hidden="true">↳</span>
-                <b>Take the controls.</b>
-                <span className="tour-invitation-cta">Try the real demo<span aria-hidden="true"> ↗</span></span>
-              </span>
-            </span>
+          <a className="tour-entry" href="/embed" data-demo-launch onFocus={prepare} aria-label="Open demo">
+            <span className="tour-open">Open demo</span>
           </a>
         </div>
         <div className="tour-controls">
@@ -452,14 +438,6 @@ export default function Tour({ prepare, suspended = false }: { prepare?: () => v
           )}
         </div>
       </div>
-      <p className="tour-caption">
-        {chapter.text}{" "}
-        <a href={docsHref(chapter.href)}>Learn more<span className="tour-sr"> about {chapter.label.toLowerCase()}</span></a>
-      </p>
-      <p className="tour-note">
-        {!reduced && <span className="tour-pace">{position.pace === "quick" ? "Quick pass · walkthrough next. " : "Walkthrough · select a chapter to replay. "}</span>}
-        Scripted illustration, not a live session. The iPhone app is in TestFlight beta.
-      </p>
     </div>
   );
 }

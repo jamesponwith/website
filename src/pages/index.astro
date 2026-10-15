@@ -37,32 +37,13 @@ const projectLinks = [
   { label: "Pull requests", href: `${SITE.github}/pulls?q=is%3Apr+sort%3Aupdated-desc` },
   { label: "Commits", href: `${SITE.github}/commits/main` },
 ];
-const features = [
-  { href: "/concepts", title: "Keep work running.", text: "Detach, close the window, come back. Your shells stay alive." },
-  { href: "/consumers/getting-started", title: "Let agents work.", text: "Read output, send input, and wait for events through the CLI or MCP." },
-  { href: "/remote-access", title: "Connect from anywhere.", text: "Attach from another client or machine. The work stays where it started." },
-];
 ---
 
 <BaseLayout minimal>
   <AuthReturn slot="head" />
   <div class="home">
     <section class="hero" aria-labelledby="product-name">
-      <p class="hero-wordmark">{SITE.name}<span> / programmable terminal runtime</span></p>
-      <h1 id="product-name" class="hero-headline">Leave the window.<br /><em>Keep the work.</em></h1>
-      <p class="hero-summary">Your terminals. Your agents. Every screen.<br />One running session, wherever you pick it up.</p>
-      <div class="hero-actions">
-        <a class="hero-try" href="/embed" data-demo-launch>Try live demo <span aria-hidden="true">↗</span></a>
-        <a href="#install">Install phux <span aria-hidden="true">↓</span></a>
-      </div>
-      <p class="hero-promise">No install. No sign-in. Bring your phone.</p>
-    </section>
-
-    <section class="terminal" aria-label="Try phux">
-      <HeroDemo client:load wsUrl={SITE.demoWsUrl} />
-    </section>
-
-    <section class="installation" aria-label="Make it yours">
+      <h1 id="product-name">{SITE.name}</h1>
       <div class="install" id="install" data-install aria-label="Install phux">
         <div class="install-head">
           <div class="install-tabs" role="group" aria-label="Choose an install">
@@ -138,13 +119,8 @@ const features = [
       </div>
     </section>
 
-    <section class="features" aria-label="What phux does">
-      {features.map((feature) => (
-        <a href={docsHref(feature.href)}>
-          <h2>{feature.title}</h2>
-          <p>{feature.text}</p>
-        </a>
-      ))}
+    <section class="terminal" aria-label="Try phux">
+      <HeroDemo client:load wsUrl={SITE.demoWsUrl} />
     </section>
   </div>
   <div hidden data-webmcp data-product={SITE.name} data-cli={cliInstall}
@@ -267,18 +243,8 @@ const features = [
 
 <style>
   .home { width: min(100%, 1120px); margin: auto; padding-inline: 24px; box-sizing: border-box; }
-  .hero { text-align: center; padding-top: clamp(32px, 5vw, 64px); }
-  .hero-wordmark { margin: 0 0 22px; font-size: 18px; line-height: 1.4; font-weight: 700; letter-spacing: -0.06em; }
-  .hero-wordmark span { margin-left: 8px; color: var(--color-dim); font: 11px var(--font-code); letter-spacing: 0; }
-  .hero-headline { margin: 0; font-size: clamp(44px, 7.5vw, 86px); line-height: 1.04; font-weight: 600; letter-spacing: -0.065em; }
-  .hero-headline em { color: #b4cba2; font-style: normal; }
-  .hero-summary { margin: 22px 0; color: var(--color-muted); font-size: clamp(15px, 2vw, 18px); line-height: 1.6; }
-  .hero-actions { display: flex; align-items: center; justify-content: center; gap: 24px; font-size: 13px; }
-  .hero-actions a { display: inline-flex; align-items: center; justify-content: center; gap: 18px; min-height: 44px; }
-  .hero-actions .hero-try { padding: 0 22px; border: 1px solid #b4cba266; border-radius: 999px; color: #d9e6cf; background: #b4cba213; transition: background 180ms ease, border-color 180ms ease; }
-  .hero-try:hover { background: #b4cba224; border-color: #b4cba2; }
-  .hero-promise { margin: 12px 0 0; color: var(--color-dim); font-size: 11px; }
-  .installation { max-width: 872px; margin: 48px auto 0; text-align: center; }
+  .hero { text-align: center; padding-top: clamp(24px, 5vw, 56px); }
+  h1 { margin: 0; font-size: clamp(80px, 15vw, 144px); line-height: 1; font-weight: 700; letter-spacing: -0.085em; }
   /* No dock, no card: the targets, the command or request, and the note are
      plain type floating on the canvas. Structure comes from spacing and the two
      hairlines only. */
@@ -329,15 +295,7 @@ const features = [
   .latest-panel p { margin: 0; padding-top: 10px; border-top: 1px solid var(--color-rule); }
   .latest-panel p a { color: var(--color-muted); }
   .copy-status { min-height: 20px; margin: 4px 0 0; color: var(--color-muted); font-size: 12px; }
-  .terminal { margin-top: 36px; }
-  @media (max-width: 600px) { .hero-wordmark span { display: block; margin: 4px 0 0; font-size: 10px; } }
-  @media (prefers-reduced-motion: reduce) { .hero-actions .hero-try { transition: none; } }
-  .terminal-note { margin: 12px 0 0; text-align: center; color: var(--color-dim); font-size: 12px; }
-  .terminal-note a { color: var(--color-muted); }
-  .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-top: 64px; padding: 32px 0 48px; border-top: 1px solid var(--color-rule); }
-  .features h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
-  .features p { margin: 0; color: var(--color-muted); font-size: 14px; line-height: 1.6; }
-  .features a:hover h2 { text-decoration: underline; }
+  .terminal { margin-top: 28px; }
   @media (max-width: 820px) {
     .install-tabs button { min-width: 76px; padding: 0 8px; font-size: 12px; }
     .install-line { grid-template-columns: minmax(0, 1fr) auto; padding: 14px 0 2px; }
@@ -348,7 +306,6 @@ const features = [
   }
   @media (max-width: 600px) {
     .home { padding-inline: 20px; }
-    .features { grid-template-columns: 1fr; gap: 24px; margin-top: 48px; }
     /* A wrapped command needs two lines; the stacked request form needs two
        rows. Either way the stage keeps both targets the same height. */
     .install-stage { min-height: 84px; }

@@ -30,14 +30,6 @@ function TerminalDownload({ failed, retry }: { failed: boolean; retry: () => voi
   </div>;
 }
 
-function DemoGuide({ mode }: { mode: Mode }) {
-  if (mode !== "demo") return null;
-  return <p className="mux-demo-guide">
-    <strong>Make it yours.</strong> Type <code>help</code> to explore, use <strong>Split pane</strong> below the terminal,
-    then <strong>Pair your phone</strong> to share this session. This sandbox has curated commands, not a Linux OS.
-  </p>;
-}
-
 /** Where the demo Worker answers about one pairing code. */
 function pairStatusUrl(wsUrl: string): string | null {
   try {
@@ -120,23 +112,17 @@ function PairPanel({ wsUrl, pair }: { wsUrl: string; pair: SessionPair }) {
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        {linked ? "Phone linked" : "Pair your phone"}<span aria-hidden="true"> ↗</span>
+        {linked ? "Phone linked" : "Pair phone"}
       </button>
       {open && (
         <div className="mux-pair-body">
           {expired && !linked ? (
-            <p className="mux-pair-text">
-              <strong>This pairing code expired.</strong> Reload the page for a fresh shell and a
-              fresh code.
-            </p>
+            <p className="mux-pair-text">This code expired. Reload for a fresh shell.</p>
           ) : (
             <>
               <span className="mux-pair-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qr }} />
               <div className="mux-pair-text">
-                <p>
-                  <strong>Point your phone camera here.</strong> The same shell opens in its browser —
-                  no install, no sign-in.
-                </p>
+                <p>Scan. Same shell, on your phone.</p>
                 <p className="mux-pair-state" role="status">
                   {linked ? "Linked. Both screens drive this shell." : "Waiting for your phone…"}
                 </p>
@@ -154,6 +140,20 @@ function PairPanel({ wsUrl, pair }: { wsUrl: string; pair: SessionPair }) {
                 >
                   {copied ? "Link copied" : "Copy link"}
                 </button>
+                <details className="mux-secure">
+                  <summary>How this is secured</summary>
+                  <p>
+                    This view gets one code. It is an HMAC-SHA256 token scoped to attach:
+                    it can join this shell and cannot open another. It works once, expires
+                    in five minutes, and ends with the session. The phone link keeps the
+                    code in the URL fragment, so the page request never sends it.
+                  </p>
+                  <p>
+                    <a href="https://github.com/no-phux/website/blob/main/worker/src/pairing.ts">pairing.ts</a>
+                    <span aria-hidden="true"> · </span>
+                    <a href="https://github.com/no-phux/website/blob/main/worker/src/token.ts">token.ts</a>
+                  </p>
+                </details>
               </div>
             </>
           )}
@@ -253,14 +253,6 @@ export default function HeroDemo({ wsUrl = "" }: { wsUrl?: string }) {
   return (
     <div className="hero-demo">
       <Tour prepare={loadTerminal} suspended={open} />
-      <div className="live-invitation">
-        <div>
-          <h3>Not a video. Your session.</h3>
-          <p>Open the sandbox. Split a pane. Scan the code and drive it from your phone.</p>
-          <small>Real phux multiplexing · curated commands · no OS or network access</small>
-        </div>
-        <a href="/embed" data-demo-launch>Try it in your browser <span aria-hidden="true">↗</span></a>
-      </div>
       <noscript>
         <p>
           <a href="/embed">Open the hosted shell</a> or{" "}
@@ -310,7 +302,6 @@ export default function HeroDemo({ wsUrl = "" }: { wsUrl?: string }) {
           ) : (
             <TerminalDownload failed={loadFailed} retry={loadTerminal} />
           ))}
-        <DemoGuide mode={mode} />
         {open && pair && <PairPanel key={pair.code} wsUrl={wsUrl} pair={pair} />}
       </dialog>
     </div>

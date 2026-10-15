@@ -45,8 +45,12 @@ try {
     });
   });
   await page.goto(base);
-  assert.match(await page.getByRole("heading", { level: 1 }).innerText(), /Leave the window\.\s*Keep the work\./);
+  assert.equal((await page.getByRole("heading", { level: 1 }).innerText()).trim(), "phux");
   assert.equal(await page.locator("#how-it-works").count(), 0, "no homepage explainer");
+  assert.equal(await page.locator(".hero-headline, .live-invitation, .features").count(), 0, "the landing carries no slogan block");
+  const installBox = await page.locator("#install").boundingBox();
+  const tourBox = await page.locator(".tour").boundingBox();
+  assert.ok(installBox && tourBox && installBox.y < tourBox.y, "the install sits above the tour");
   assert.equal(await page.locator("#install .install-request").isHidden(), true, "the hero opens on a command, not the request form");
   assert.equal(await page.locator(".beta, #testflight").count(), 0, "the landing carries no separate TestFlight band");
   assert.equal(await page.locator(".tour").count(), 1, "one product tour");
@@ -56,11 +60,8 @@ try {
     ["phux", "Docs", "Try", "Source"],
     "the top bar carries the wordmark and the Docs/Try/Source links",
   );
-  assert.ok(await page.locator(".hero-headline").isVisible(), "the hero states the product outcome");
-  assert.equal(await page.getByRole("link", { name: "Try live demo" }).getAttribute("href"), "/embed");
-  assert.match(await page.locator(".live-invitation").innerText(), /curated commands · no OS or network access/);
   assert.equal(await page.locator(".tour-distant-host").count(), 3, "restrained background hosts");
-  const entry = page.getByRole("link", { name: "Open terminal demo", exact: true });
+  const entry = page.getByRole("link", { name: "Open demo", exact: true });
   await page.locator("astro-island:not([ssr]) .tour-entry").waitFor();
   await page.locator(".tour").scrollIntoViewIfNeeded();
   assert.equal(await page.locator(".tour").getAttribute("data-pace"), "quick", "opens with the quick lap");
@@ -71,22 +72,15 @@ try {
   await page.getByRole("button", { name: "Play tour" }).click();
   await page.locator('.tour[data-pace="walkthrough"]').waitFor({ timeout: 12_000 });
   assert.equal(await page.locator('.tour-chapters button[aria-pressed="true"]').innerText(), "01 Attach", "quick lap restarts as an explanatory walkthrough");
-  assert.match(await page.locator(".tour-pace").innerText(), /Walkthrough/);
   // The playback checks used the mouse. Exercise actual keyboard navigation
   // before asserting :focus-visible, rather than relying on browser modality.
   await entry.focus();
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Tab");
-  await page.waitForFunction(() => getComputedStyle(document.querySelector(".tour-invitation")!).opacity === "1");
-  assert.equal(await page.locator(".tour-invitation").evaluate((node) => getComputedStyle(node).opacity), "1", "keyboard focus reveals the invitation");
-  const invitation = await page.locator(".tour-invitation").boundingBox();
-  const canvas = await page.locator(".tour-canvas").boundingBox();
-  assert.ok(
-    invitation && canvas && invitation.height < 60 && invitation.y > canvas.y + canvas.height - 80,
-    "the invitation stays below the artwork instead of blurring it out",
-  );
-  assert.equal(await page.locator(".tour-invitation").evaluate((node) => getComputedStyle(node).backdropFilter), "none");
-  assert.match(await page.locator(".tour-invitation").innerText(), /Take the controls\.[\s\S]*Try the real demo/);
+  await page.waitForFunction(() => getComputedStyle(document.querySelector(".tour-open")!).opacity === "1");
+  assert.equal(await page.locator(".tour-open").evaluate((node) => getComputedStyle(node).opacity), "1", "keyboard focus reveals the demo");
+  assert.match(await page.locator(".tour-open").evaluate((node) => getComputedStyle(node).backdropFilter), /blur/, "focus blurs the tour");
+  assert.equal((await page.locator(".tour-open").innerText()).trim(), "Open demo");
   assert.equal(await page.locator("dialog[open]").count(), 0, "discovery does not launch a session");
   await entry.hover();
   assert.equal(await page.locator("dialog[open]").count(), 0, "hover only prepares the client");
@@ -97,8 +91,6 @@ try {
   assert.equal(await page.locator(".tour").getAttribute("data-pace"), "walkthrough", "manual chapter selection uses readable pacing");
   await page.getByRole("button", { name: "Pause tour" }).click();
   assert.ok(await page.getByRole("button", { name: "Play tour" }).isVisible(), "tour pauses");
-  assert.equal(await page.locator("main .features h2").count(), 3);
-  assert.equal(await page.getByRole("link", { name: /Let agents work/ }).getAttribute("href"), "https://docs.phux.sh/consumers/getting-started");
   await page.getByRole("button", { name: "Copy install command" }).click();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "curl -fsSL https://phux.sh/install | sh");
   assert.equal(await page.getByRole("status").innerText(), "Install command copied.");
@@ -154,12 +146,12 @@ try {
     await page.screenshot({ path: `${artifacts}/home-${width}.png`, fullPage: true });
   }
   assert.ok(!requests.some((url) => /\.wasm|\/auth\/session|\/healthz|phux-architecture\.mp4/.test(url)), "idle homepage does not allocate sessions or fetch film/WASM");
-  await page.getByRole("link", { name: /Try it in your browser/ }).click();
+  await page.getByRole("link", { name: "Open demo", exact: true }).click();
   await page.locator("dialog[open]").waitFor();
   assert.equal(await page.locator(".tour").getAttribute("data-playing"), "false", "live demo suspends the illustrated tour");
   await page.getByRole("button", { name: "Close live terminal" }).click();
   assert.equal(await page.locator("dialog[open]").count(), 0);
-  assert.ok(await page.getByRole("link", { name: /Try it in your browser/ }).evaluate((link) => link === document.activeElement), "closing restores focus");
+  assert.ok(await page.getByRole("link", { name: "Open demo", exact: true }).evaluate((link) => link === document.activeElement), "closing restores focus");
   await page.goto(`${base}/more`);
   assert.equal(await page.getByRole("link", { name: /Built for automation/ }).getAttribute("href"), "https://docs.phux.sh/consumers/getting-started");
   assert.ok(await page.locator("#testflight form").isVisible(), "iPhone signup is preserved");
@@ -181,20 +173,18 @@ try {
   await stillPage.goto(base);
   await stillPage.locator("astro-island:not([ssr]) .tour").waitFor();
   assert.equal(await stillPage.locator(".tour-play").count(), 0, "reduced motion does not autoplay");
-  assert.equal(await stillPage.locator(".tour-heading h3").evaluate((node) => getComputedStyle(node).animationName), "none");
   assert.equal(await stillPage.locator(".tour").getAttribute("data-playing"), "false");
-  assert.equal(await stillPage.locator(".tour-pace").count(), 0, "reduced motion does not promise a moving quick pass");
+  assert.equal(await stillPage.locator(".tour-heading, .tour-caption, .tour-pace").count(), 0, "reduced motion does not restore the slogan");
   assert.match(await stillPage.locator(".tour-terminal").innerText(), /Finished/, "reduced motion shows the settled chapter");
   await stillContext.close();
   const staticContext = await browser.newContext({ javaScriptEnabled: false });
   const staticPage = await staticContext.newPage();
   await staticPage.goto(base);
-  assert.match(await staticPage.getByRole("heading", { level: 1 }).innerText(), /Leave the window\.\s*Keep the work\./);
+  assert.equal((await staticPage.getByRole("heading", { level: 1 }).innerText()).trim(), "phux");
   assert.ok(await staticPage.locator("#install code").isVisible());
-  assert.equal(await staticPage.getByRole("link", { name: /Try it in your browser/ }).getAttribute("href"), "/embed");
+  assert.equal(await staticPage.getByRole("link", { name: "Open demo", exact: true }).getAttribute("href"), "/embed");
   assert.match(await staticPage.locator(".tour-terminal").innerText(), /Finished/, "no-JS tour shows a settled scene");
   assert.equal(await staticPage.locator(".tour-lines > span").first().evaluate((node) => getComputedStyle(node).opacity), "1", "static output stays fully readable");
-  assert.equal(await staticPage.getByRole("link", { name: "Try live demo" }).getAttribute("href"), "/embed");
   await staticContext.close();
   console.log(`PASS home: copy, quick lap → walkthrough, chapters/pause/reduced motion, demo open/close/focus, 320/390/768/1280px, no-JS, secondary content, idle resource budget. Screenshots: ${artifacts}`);
 } finally {

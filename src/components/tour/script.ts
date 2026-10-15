@@ -62,14 +62,14 @@ const BASE: Frame = {
     build: { lines: [], status: "idle" },
     claude: {
       lines: [
-        { text: "$ claude", tone: "cmd" },
-        { text: "✻ Ready. What should we work on?", tone: "dim" },
+        { text: "api > claude", tone: "cmd" },
+        { text: "ready", tone: "dim" },
       ],
       status: "idle",
     },
     train: {
       lines: [
-        { text: "$ python train.py", tone: "cmd" },
+        { text: "devbox > python train.py", tone: "cmd" },
         { text: "epoch 11/50  loss 0.244", tone: "dim" },
       ],
       status: "working",
@@ -88,15 +88,15 @@ export const CHAPTERS: readonly Chapter[] = [
   {
     id: "attach",
     label: "Attach",
-    title: "One terminal. Every screen.",
-    text: "The server owns the shell. Your terminal, Phux.app, and your phone are views of the same running process.",
+    title: "Attach",
+    text: "",
     href: "/concepts",
     seconds: 4.2,
     steps: [
-      { at: 0.08, type: "phux attach api", pane: "shell" },
+      { at: 0.08, type: "phux attach api", pane: "shell", prompt: "studio > " },
       { at: 0.24, signal: "attach", from: "terminal", to: "server" },
       { at: 0.44, view: "attached", client: "terminal" },
-      { at: 0.48, type: "cargo build --release", pane: "build" },
+      { at: 0.48, type: "cargo build --release", pane: "build", prompt: "api > " },
       { at: 0.70, signal: "keys", from: "terminal", to: "server" },
       { at: 0.90, status: "working", pane: "build" },
       { at: 0.92, line: "   Compiling api v0.4.2", pane: "build", tone: "dim" },
@@ -114,18 +114,18 @@ export const CHAPTERS: readonly Chapter[] = [
   {
     id: "agents",
     label: "Agents",
-    title: "Agents work in the open.",
-    text: "Claude runs in a pane and drives other terminals through phux. Its state reaches every screen, so you see when it needs you.",
+    title: "Agents",
+    text: "",
     href: "/consumers/getting-started",
     seconds: 4.8,
     steps: [
       { at: 0, focus: "claude" },
-      { at: 0.08, type: "fix the flaky migration test", pane: "claude", prompt: "> " },
+      { at: 0.08, type: "fix the flaky migration test", pane: "claude", prompt: "api > " },
       { at: 0.36, signal: "keys", from: "terminal", to: "server" },
       { at: 0.56, status: "working", pane: "claude" },
       { at: 0.58, line: "Reading migrations/0042_users.sql", pane: "claude", tone: "dim" },
       { at: 0.90, log: "@7 → phux_run @3 cargo test" },
-      { at: 0.92, type: "cargo test", pane: "build", agent: true },
+      { at: 0.92, type: "cargo test", pane: "build", agent: true, prompt: "api > " },
       { at: 1.08, status: "working", pane: "build" },
       { at: 1.10, line: "running 128 tests", pane: "build", tone: "dim" },
       { at: 1.12, signal: "output", from: "server", to: VIEWS },
@@ -141,8 +141,8 @@ export const CHAPTERS: readonly Chapter[] = [
   {
     id: "away",
     label: "Walk away",
-    title: "Close the laptop. Keep the work.",
-    text: "Views come and go; the terminals keep running on the server. Answer the agent from your phone.",
+    title: "Walk away",
+    text: "",
     href: "/concepts",
     seconds: 4.5,
     steps: [
@@ -166,13 +166,13 @@ export const CHAPTERS: readonly Chapter[] = [
   {
     id: "remote",
     label: "Remote",
-    title: "Bring your other machines.",
-    text: "Pair a host over SSH once; after that the terminal attaches over QUIC. Its work keeps running where it started.",
+    title: "Remote",
+    text: "",
     href: "/remote-access",
     seconds: 4.2,
     steps: [
       { at: 0, log: "" },
-      { at: 0.08, type: "phux --remote me@devbox", pane: "shell" },
+      { at: 0.08, type: "phux --remote me@devbox", pane: "shell", prompt: "studio > " },
       { at: 0.32, remote: true },
       { at: 0.34, signal: "SSH pair", from: "terminal", to: "devbox" },
       { at: 0.60, signal: "QUIC", from: "terminal", to: "devbox" },
@@ -228,7 +228,7 @@ function play(start: Frame, steps: readonly Step[], time: number): Frame {
     } else if ("type" in step) {
       const typed = Math.min(step.type.length, Math.floor(age * TYPE_CPS));
       frame.panes[step.pane].lines.push({
-        text: (step.prompt ?? "$ ") + step.type.slice(0, typed),
+        text: (step.prompt ?? "api > ") + step.type.slice(0, typed),
         tone: step.agent ? "agent" : "cmd",
         typing: typed < step.type.length,
       });

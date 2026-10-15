@@ -64,11 +64,13 @@ describe("landing tour", () => {
 
   test("static artwork offers a real link without misrepresenting background hosts as live", () => {
     const html = renderToStaticMarkup(createElement(Tour));
-    expect(html).toContain('aria-label="Open terminal demo"');
+    expect(html).toContain('aria-label="Open demo"');
     expect(html).toContain('href="/embed"');
     expect(html).toContain('class="tour-distance" aria-hidden="true"');
     expect(html.match(/class="tour-distant-host /g)).toHaveLength(3);
-    expect(html).toContain("Scripted illustration, not a live session.");
+    expect(html).toContain("api &gt;");
+    expect(html).not.toContain("Agents work in the open");
+    expect(html).not.toContain("Scripted illustration");
     expect(html).not.toContain('class="tour-bar"');
   });
 });
