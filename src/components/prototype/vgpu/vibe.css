@@ -139,3 +139,8 @@
 .surface-program:before{content:'';position:absolute;inset:-10px -8px;z-index:-1;background:linear-gradient(90deg,#09111a25,transparent);pointer-events:none}
 .inspector-terminal{height:190px;margin-top:16px}.ghostty-native-screen{height:300px;min-height:0;padding:16px 18px;background:#070c1299;border:1px solid #a8cadb15}
 @media(max-width:560px){.surface-program{left:16px;right:16px;bottom:30px;height:42px}.ghostty-native-screen{height:250px;padding:12px}}
+
+/* The homepage provides its own navigation above the same live experience. */
+.embedded-home .lab-nav,.embedded-home .lab-skip{display:none}
+
+.embedded-home,.embedded-home .vibe-stage{min-height:0}

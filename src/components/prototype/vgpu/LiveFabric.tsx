@@ -77,14 +77,23 @@ function usePresence<T extends {id:string}>(current:T[]){
  painted.current=reserveFabricOrder(painted.current,current,lingering);
  return painted.current;
 }
+function fabricViewportWindow(): Window {
+ // An expanded iframe is content height, never the viewport baseline for layout.
+ try {
+  if(new URLSearchParams(location.search).get('embedded')==='home'&&window.parent.location.origin===location.origin)return window.parent;
+ } catch { /* A cross-origin embed retains its own viewport. */ }
+ return window;
+}
 export function useFabricLayout(state:FabricState){
  const hosts=usePresence(state.hosts),sessions=usePresence(state.sessions);
- const [size,setSize]=useState(()=>({w:typeof window==='undefined'?1280:document.documentElement.clientWidth,h:typeof window==='undefined'?800:window.innerHeight}));
+ const [size,setSize]=useState(()=>({w:typeof window==='undefined'?1280:document.documentElement.clientWidth,h:typeof window==='undefined'?800:fabricViewportWindow().innerHeight}));
  const [order,setOrder]=useState<Record<string,string[]>>({});
  useEffect(()=>{
-  const resize=()=>{const w=document.documentElement.clientWidth,h=window.innerHeight;setSize(previous=>previous.w===w&&previous.h===h?previous:{w,h});};
-  const observer=new ResizeObserver(resize);observer.observe(document.documentElement);window.addEventListener('resize',resize);resize();
-  return()=>{observer.disconnect();window.removeEventListener('resize',resize);};
+  const viewport=fabricViewportWindow();
+  const resize=()=>{const w=document.documentElement.clientWidth,h=viewport.innerHeight;setSize(previous=>previous.w===w&&previous.h===h?previous:{w,h});};
+  const message=(event:MessageEvent)=>{if(event.origin===location.origin&&event.source===window.parent&&event.data?.type==='phux:hero-viewport')resize();};
+  const observer=new ResizeObserver(resize);observer.observe(document.documentElement);window.addEventListener('resize',resize);window.addEventListener('message',message);resize();
+  return()=>{observer.disconnect();window.removeEventListener('resize',resize);window.removeEventListener('message',message);};
  },[]);
  const identity=JSON.stringify([hosts.map(h=>[h.id,h.parentHostId]),sessions.map(s=>[s.id,s.hostId,s.parentSessionId])]);
  const topology=useMemo(()=>({hosts,sessions}),[identity]);
