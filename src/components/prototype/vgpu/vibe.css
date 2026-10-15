@@ -99,7 +99,7 @@
 @media(prefers-reduced-motion:reduce){.fabric-packets{display:none}}
 .performance-panel{pointer-events:none}.performance-panel button{pointer-events:auto}.wire-packet{offset-anchor:100% 50%}
 /* The default experience is an instrument you move through, with optional inspection. */
-.exploration-mode:focus-visible{outline:none}.exploration-mode .fabric-actions,.exploration-mode .node-drag,.exploration-mode .node-foot,.exploration-mode .fabric-host>button:not(.host-identity),.exploration-mode .fabric-host small,.exploration-mode .surface-branch,.exploration-mode .surface-message,.exploration-mode .fabric-local-note,.exploration-mode .vibe-materials{display:none}
+.exploration-mode:focus-visible{outline:none}.exploration-mode .fabric-actions,.exploration-mode .node-foot,.exploration-mode .fabric-host>button:not(.host-identity),.exploration-mode .fabric-host small,.exploration-mode .surface-branch,.exploration-mode .surface-message,.exploration-mode .fabric-local-note,.exploration-mode .vibe-materials{display:none}
 .exploration-mode .node-live-output{height:calc(100% - 30px);padding-bottom:14px}.exploration-mode .node-heading{padding-left:13px}.exploration-mode .fabric-host{min-width:0;padding:10px 14px;gap:10px}.exploration-mode .surface-material{opacity:0}.exploration-mode .work-surface:hover .surface-material,.exploration-mode .work-surface:focus-within .surface-material{opacity:1}.exploration-mode .surface-footer{opacity:0;transition:opacity .25s}.exploration-mode .work-surface:hover .surface-footer,.exploration-mode .work-surface:focus-within .surface-footer{opacity:.8}
 .exploration-mode .vibe-input-wrap{opacity:.38;transition:opacity .3s,transform .3s}.exploration-mode .vibe-input-wrap:hover,.exploration-mode .vibe-input-wrap:focus-within{opacity:1}.exploration-mode .vibe-input{background:#0c141b55;border-color:#c2d6ec16;box-shadow:none;height:49px}.exploration-mode .vibe-send{border:0;background:none}.exploration-mode .vibe-input input::placeholder{color:#adc0ce99}
 .exploration-aura{position:absolute;width:280px;height:280px;left:0;top:0;pointer-events:none;z-index:2;opacity:0;border-radius:50%;background:radial-gradient(ellipse,#c7e6ff0b,transparent 67%);transition:opacity .8s;will-change:transform}
@@ -107,3 +107,27 @@
 .exploration-hint{position:absolute;left:4.5%;bottom:29px;color:#b4cad466;font:8px var(--lab-mono);letter-spacing:.5px;transition:opacity .6s}.is-exploring .exploration-hint{opacity:0}.vibe-stage:not(.exploration-mode) .exploration-port,.vibe-stage:not(.exploration-mode) .exploration-hint{display:none}
 @keyframes exploration-breathe{0%,100%{scale:.85;opacity:.2}50%{scale:1.1;opacity:.7}}
 @media(prefers-reduced-motion:reduce){.exploration-port>i{animation:none}.exploration-aura{display:none}}
+/* One responsive layout owns the surface, host columns, view slots, and sockets. */
+.variant-combo{height:auto;min-height:100svh;overflow:clip}.variant-combo #lab-main{height:auto}
+.vibe-stage{min-height:100svh;overflow:clip}.fabric-world{inset:0;width:100%;height:100%;transform:none;transform-origin:initial;top:0}
+.work-surface{min-height:0;max-height:none}
+.fabric-node{min-height:0;min-width:0;transition:left .4s cubic-bezier(.22,.68,.2,1),top .4s cubic-bezier(.22,.68,.2,1),width .4s,height .4s,transform .4s cubic-bezier(.22,.68,.2,1),border-color .2s}
+.fabric-host{transform:none;min-width:0;padding:4px 10px;gap:8px;box-sizing:border-box;transition:left .4s,top .4s,width .4s;box-shadow:0 0 20px #b4d9ef05}
+.fabric-host .host-identity{flex:1;min-width:0;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fabric-host .host-identity small{font-size:5px}
+.fabric-host .host-core{width:5px;height:5px;flex-shrink:0}.fabric-host>button:not(.host-identity){width:20px;min-width:20px;height:20px}
+.node-heading{height:30px;padding-inline:8px;gap:4px}.node-name{font-size:9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.node-close{flex-shrink:0}
+.node-live-output{gap:10px;padding:6px 10px}.native-glyph{width:30%}.node-metrics{font-size:12px}.node-metrics small{font-size:5px;letter-spacing:.6px}.node-foot>span{font-size:5px}
+.node-drag{display:block;width:14px;min-width:14px;padding:2px 0;font:12px var(--lab-mono);opacity:0;transition:opacity .2s;flex-shrink:0}
+.fabric-node:hover .node-drag,.fabric-node:focus-within .node-drag{opacity:.65}.node-drag:focus-visible{opacity:1}
+.exploration-mode .fabric-host{padding:4px 10px;gap:8px}.exploration-mode .node-heading{padding-inline:8px}.exploration-mode .node-live-output{padding-bottom:10px}
+.fabric-wires,.fabric-packets{transition:opacity .22s}.fabric-world[data-arranging] .fabric-wires,.fabric-world[data-arranging] .fabric-packets{opacity:0}.fabric-world[data-arranging] .wire-packet{animation-play-state:paused}
+.fabric-node.node-dragging{z-index:12;transition:none;animation:none;cursor:grabbing;border-color:#c8eaff99;box-shadow:0 20px 65px #0006,0 0 0 1px #c8eaff22;will-change:transform}
+.fabric-snap-target{position:absolute;z-index:3;pointer-events:none;border:1px dashed #c1e7fa88;border-radius:6px;box-shadow:0 0 0 5px #b5dfff0c;background:#b5dfff08;transition:left .15s,top .15s}
+.fabric-stacked .work-surface{transform:perspective(1800px) rotateX(var(--surface-rx,0deg)) rotateY(var(--surface-ry,0deg))}
+@media(hover:none){.node-drag{opacity:.65}}
+@media(prefers-reduced-motion:reduce){.fabric-node,.fabric-host,.fabric-snap-target,.fabric-wires,.fabric-packets{transition:none}}
+
+.fabric-world[data-routing] .fabric-wires,.fabric-world[data-routing] .fabric-packets{opacity:0}.fabric-world[data-routing] .wire-packet{animation-play-state:paused}
+@media(max-width:560px){.fabric-inspector{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(100vw - 36px);max-height:calc(100svh - 48px);overflow:auto}}
+
+.fabric-inspector{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);max-height:calc(100svh - 48px);overflow:auto}
