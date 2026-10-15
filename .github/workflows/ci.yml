@@ -50,7 +50,7 @@ jobs:
         run: python3 scripts/ci/test_site_source_pin.py
 
       - name: Test
-        run: bun test
+        run: bun run test
 
       - name: Sync docs
         run: bun run sync-docs
