@@ -6,6 +6,7 @@
 
 User-agent: *
 Allow: /
+Disallow: /internal/
 Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 Agentmap: https://phux.sh/.well-known/ai-catalog.json

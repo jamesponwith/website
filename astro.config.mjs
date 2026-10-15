@@ -13,6 +13,7 @@ import {
 } from "fumadocs-core/mdx-plugins";
 import { buildSearchIndex } from "./scripts/build-search.mjs";
 import { isDocsPath } from "./host/routes.ts";
+import { wgslVitePlugin } from "@vgpu/wgsl/loader-vite";
 
 // The docs pages render with the Fumadocs markdown pipeline: anchored headings
 // (for the TOC), npm-install tabs, and Shiki-highlighted code.
@@ -61,6 +62,7 @@ const searchIndex = () => ({
 });
 
 export default defineConfig({
+  devToolbar: { enabled: false },
   site: "https://phux.sh",
   // Match the wire/phall.io house style: bare, no-trailing-slash canonical paths.
   trailingSlash: "never",
@@ -105,7 +107,10 @@ export default defineConfig({
     }),
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), wgslVitePlugin()],
+    server: {
+      proxy: { "/__scene": { target: "http://127.0.0.1:4399", rewrite: (path) => path.replace(/^\/__scene/, "") } },
+    },
     // The phux-web client ships a .wasm asset (the wire client + embedded
     // libghostty-vt engine); keep it un-inlined so it streams.
     assetsInclude: ["**/*.wasm"],

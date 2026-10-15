@@ -26,10 +26,19 @@ jobs:
         with:
           persist-credentials: false
 
+      # The version/pin tests must inspect the source used to build the image,
+      # not whichever release happens to be on product main during this run.
+      - name: Resolve pinned native source
+        id: phux-source
+        run: |
+          revision="$(sed -n 's/^ARG PHUX_REVISION=\([0-9a-f]\{40\}\)$/\1/p' worker/Dockerfile)"
+          [[ "$revision" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: no-phux/phux
-          ref: main
+          ref: ${{ steps.phux-source.outputs.revision }}
           path: phux
           persist-credentials: false
 

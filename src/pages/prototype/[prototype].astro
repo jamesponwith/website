@@ -1,0 +1,19 @@
+---
+// Five disposable landing-page directions, sharing a URL-addressable switcher.
+// This route is excluded from production output.
+import VgpuPrototype from "../../components/prototype/vgpu/VgpuPrototype";
+export function getStaticPaths() {
+  return import.meta.env.DEV ? [{ params: { prototype: "vgpu" } }] : [];
+}
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#09090d" />
+    <title>phux / uncommon possibilities</title>
+  </head>
+  <body><VgpuPrototype client:only="react" /></body>
+</html>

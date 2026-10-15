@@ -78,6 +78,17 @@ export interface Envelope {
   email?: string;
   source?: string;
   demo?: DemoInfo;
+  /** Tripwire-only fields (kind: "tripwire"); absent on ordinary events. */
+  trap?: string;
+  query?: string;
+  asn?: number;
+  as_org?: string;
+  colo?: string;
+  tls_version?: string;
+  http_version?: string;
+  /** Allowlisted request metadata only; excludes identity/credential headers. */
+  headers?: string;
+  body_sample?: string;
 }
 
 /** Send one envelope. The caller decides explicitly whether failure is fatal. */
@@ -136,8 +147,67 @@ export const buildEnvelope = Effect.fnUntraced(function*(
   };
 });
 
-export function memberIdFromRequest(request: Request): string | null {
-  const cookie = request.headers.get("cookie") ?? "";
+/** CF metadata worth keeping for a tripped actor; all optional at runtime. */
+interface TripwireCf {
+  asn?: number;
+  asOrganization?: string;
+  colo?: string;
+  tlsVersion?: string;
+  httpProtocol?: string;
+}
+
+/**
+ * The kind:"tripwire" envelope. Only built for requests that are hostile by
+ * construction (bait paths, the form honeypot), so it carries what the
+ * privacy model withholds from ordinary events: raw request headers, cf ASN/
+ * org/colo/TLS, the query string, and an optional posted-body sample. Member
+ * identity is explicitly dropped — a trap record never joins the members
+ * dataset, and identity-bearing headers are suppressed.
+ */
+export const buildTripwireEnvelope = Effect.fnUntraced(function*(
+  request: Request,
+  init: { trap: string; status: number; contentType?: string; bodySample?: string },
+): Effect.fn.Return<Envelope> {
+  const base = yield* buildEnvelope(
+    request,
+    new Response(null, { status: init.status, headers: init.contentType ? { "content-type": init.contentType } : undefined }),
+  );
+  const cf = (request as Request & { cf?: TripwireCf }).cf;
+  return {
+    ...base,
+    member_id: undefined,
+    kind: "tripwire",
+    trap: init.trap.slice(0, 40),
+    query: new URL(request.url).search.slice(0, 500),
+    asn: typeof cf?.asn === "number" ? cf.asn : undefined,
+    as_org: cf?.asOrganization?.slice(0, 120) || undefined,
+    colo: cf?.colo?.slice(0, 8) || undefined,
+    tls_version: cf?.tlsVersion?.slice(0, 16) || undefined,
+    http_version: cf?.httpProtocol?.slice(0, 16) || undefined,
+    headers: sanitizedHeaders(request.headers),
+    body_sample: init.bodySample?.slice(0, 1024),
+  };
+});
+
+/** Allowlist avoids accidentally retaining novel auth headers or URL tokens. */
+const FINGERPRINT_HEADERS = new Set([
+  "user-agent", "accept", "accept-language", "accept-encoding", "content-type",
+  "sec-fetch-site", "sec-fetch-mode", "sec-fetch-dest", "x-scan",
+]);
+
+function sanitizedHeaders(headers: Headers): string {
+  const kept: Record<string, string> = {};
+  let count = 0;
+  for (const [name, value] of headers) {
+    if (!FINGERPRINT_HEADERS.has(name)) continue;
+    if (count >= 40) break;
+    kept[name] = value.slice(0, 300);
+    count += 1;
+  }
+  return JSON.stringify(kept).slice(0, 8192);
+}
+
+export function memberIdFromRequest(request: Request): string | null {  const cookie = request.headers.get("cookie") ?? "";
   for (const part of cookie.split(";")) {
     const [name, ...rest] = part.trim().split("=");
     if (name === MEMBER_COOKIE) {
@@ -240,8 +310,19 @@ export function handleBeta(
     const email = input.email.trim().toLowerCase();
     if (!Schema.is(Email)(email)) return invalidEmail();
     // The hidden field is invisible to people; only form-filling bots set it.
+    // A trip is hostile by construction, so it reports a tripwire envelope
+    // carrying what the bot posted — without ever reaching TestFlight.
     if (input.website) {
-      return { response: Response.json({ ok: true, status: "requested" }) };
+      const background = canForward(env)
+        ? yield* tripwireBackground(request, env, "form-honeypot", {
+            email: email.slice(0, 254),
+            website: input.website.slice(0, 120),
+          })
+        : undefined;
+      return {
+        response: Response.json({ ok: true, status: "requested" }),
+        background,
+      };
     }
     const outcome = yield* Effect.promise(() => invite(env, email));
     const recorded = Boolean(env.MEMBER_KEY) && canForward(env);
@@ -276,6 +357,23 @@ export function handleBeta(
     };
   }).pipe(recoverRequestFailures);
 }
+
+const tripwireBackground = Effect.fnUntraced(function*(
+  request: Request,
+  env: AnalyticsEnv,
+  trap: string,
+  body?: Record<string, string>,
+): Effect.fn.Return<
+  Effect.Effect<void, HttpFailure, AnalyticsHttp>,
+  never
+> {
+  const envelope = yield* buildTripwireEnvelope(request, {
+    trap,
+    status: 200,
+    bodySample: body ? JSON.stringify(body) : undefined,
+  });
+  return forwardEnvelope(env, envelope);
+});
 
 const signupBackground = Effect.fnUntraced(function*(
   request: Request,
