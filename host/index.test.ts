@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import handler from "./index";
+import { rotationPayload } from "./tripwire-fixtures";
 
 const PAGE = `<!doctype html><html><head><title>phux</title></head>
 <body><main><h1>phux</h1><p>you and your agents share the same terminals</p></main></body></html>`;
@@ -102,9 +103,76 @@ describe("telemetry ingest", () => {
   });
 });
 
+describe("tripwire traps", () => {
+  test("missing, unavailable, or invalid ops policy leaves misses and assets alone", async () => {
+    const pending: Promise<unknown>[] = [];
+    for (const ANALYTICS of [undefined,
+      { fetch: async () => new Response(null, { status: 503 }) },
+      { fetch: async () => Response.json({ payload: { envBody: "must not serve" } }) },
+    ]) {
+      const response = await handler.fetch(new Request("https://phux.sh/fixture/settings"), {
+        ASSETS: { fetch: async () => new Response("ordinary miss", { status: 404 }) },
+        ANALYTICS,
+      }, { waitUntil: (promise) => pending.push(promise) });
+      expect(response.status).toBe(404);
+      expect(await response.text()).toBe("ordinary miss");
+      expect(response.headers.get("x-phux-rev")).toBeNull();
+    }
+    await Promise.all(pending);
+  });
+
+  test("a bait path springs the trap and reports a tripwire envelope", async () => {
+    const pending: Promise<unknown>[] = [];
+    const events: Array<Record<string, unknown>> = [];
+    const response = await handler.fetch(
+      new Request("https://phux.sh/fixture/repo/config", {
+        headers: { "user-agent": "zgrab/1.0" },
+      }),
+      {
+        ...assetsOf(PAGE),
+        ANALYTICS: {
+          fetch: async (request: Request) => {
+            if (new URL(request.url).pathname === "/api/bait/current") return Response.json(rotationPayload());
+            const batch = (await request.json()) as { events: typeof events };
+            events.push(...batch.events);
+            return new Response(null, { status: 204 });
+          },
+        },
+      },
+      {
+        waitUntil: (promise) => {
+          pending.push(promise);
+        },
+      },
+    );
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("synthetic repository response");
+    await Promise.all(pending);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      kind: "tripwire",
+      trap: "git",
+      path: "/fixture/repo/config",
+      ua: "zgrab/1.0",
+    });
+  });
+
+  test("legitimate pages never trip the wire", async () => {
+    const response = await handler.fetch(
+      new Request("https://phux.sh/", {
+        headers: { accept: "text/html" },
+      }),
+      assetsOf(PAGE),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("text/html");
+  });
+});
+
 describe("hosting fast paths", () => {
   test("fingerprinted assets preserve caching and never emit visitor telemetry", async () => {
     const pending: Promise<unknown>[] = [];
+    let privateCalls = 0;
     const response = await handler.fetch(
       new Request("https://docs.phux.sh/_astro/showcase.a1b2c3.js", {
         headers: { accept: "text/markdown" },
@@ -127,6 +195,7 @@ describe("hosting fast paths", () => {
         },
         ANALYTICS: {
           fetch: async () => {
+            privateCalls++;
             throw new Error("static assets must not emit private observations");
           },
         },
@@ -144,6 +213,7 @@ describe("hosting fast paths", () => {
     expect(response.headers.get("vary")).toBeNull();
     expect(await response.text()).toBe("export const ready = true;");
     expect(pending).toEqual([]);
+    expect(privateCalls).toBe(0);
   });
 
   test("background observation lifetime includes deferred analytics initialization", async () => {
@@ -155,6 +225,7 @@ describe("hosting fast paths", () => {
         ...assetsOf(PAGE),
         ANALYTICS: {
           fetch: async (request: Request) => {
+            if (new URL(request.url).pathname === "/api/bait/current") return new Response(null, { status: 503 });
             const batch = (await request.json()) as { events: typeof events };
             events.push(...batch.events);
             return new Response(null, { status: 204 });

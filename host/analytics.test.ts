@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Clock, Effect } from "effect";
 import {
+  AnalyticsHttp,
   buildEnvelope,
   createClaimToken,
   forwardEnvelope,
@@ -251,7 +252,7 @@ describe("handleBeta", () => {
     expect(invited.background).toBeUndefined();
   });
 
-  test("rejects bad emails and drops honeypot submissions without inviting", async () => {
+  test("rejects bad emails and reports honeypot submissions without inviting", async () => {
     let calls = 0;
     const invite = async () => {
       calls += 1;
@@ -263,8 +264,39 @@ describe("handleBeta", () => {
       handleBeta(betaRequest({ email: "a@b.co", website: "spam.example" }), ENV, invite),
     );
     expect(await bot.response.json()).toEqual({ ok: true, status: "requested" });
-    expect(bot.background).toBeUndefined();
     expect(calls).toBe(0);
+    // The honeypot trip reports a tripwire envelope carrying what the bot posted.
+    expect(bot.background).toBeDefined();
+    const captured: Array<Record<string, unknown>> = [];
+    const env = {
+      ANALYTICS: {
+        fetch: async (request: Request) => {
+          const batch = (await request.json()) as {
+            events: Array<Record<string, unknown>>;
+          };
+          captured.push(...batch.events);
+          return new Response(null, { status: 204 });
+        },
+      },
+    };
+    await runAnalytics(
+      bot.background!.pipe(
+        Effect.provideService(AnalyticsHttp, {
+          execute: (request: Request) =>
+            Effect.promise(() => env.ANALYTICS.fetch(request)),
+        }),
+      ),
+    );
+    expect(captured).toHaveLength(1);
+    expect(captured[0]).toMatchObject({
+      kind: "tripwire",
+      trap: "form-honeypot",
+      path: "/api/beta",
+    });
+    expect(JSON.parse(captured[0]!.body_sample as string)).toEqual({
+      email: "a@b.co",
+      website: "spam.example",
+    });
   });
 });
 

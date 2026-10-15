@@ -5,12 +5,16 @@
  * belongs on. See host/routes.ts for the split. It also negotiates markdown
  * for agents (host/markdown.ts), hosts the read-only MCP endpoint
  * (host/mcp.ts), records passive aggregate telemetry (host/telemetry.ts),
- * and serves the public telemetry dashboard API at /api/telemetry.
+ * serves the public telemetry dashboard API at /api/telemetry, and springs
+ * tripwire traps on hostile-bait paths (host/tripwire-paths.ts →
+ * host/tripwire.ts).
  */
 import { routeRequest } from "./routes";
 import { handleAssociationRequest } from "./pairing";
 import type { TestFlightEnv } from "./testflight";
 import { estimateTokens, htmlToMarkdown, wantsMarkdown } from "./markdown";
+import { classifyTrap } from "./tripwire-paths";
+import { getRotation } from "./bait-rotation";
 import {
   TelemetryDO,
   classifyRequest,
@@ -54,6 +58,15 @@ export default {
     // Keep host routing above this shortcut; do not bypass it for docs assets.
     if (url.pathname.startsWith("/_astro/") && shouldSkipPath(url.pathname)) {
       return env.ASSETS.fetch(request);
+    }
+
+    // Only the private binding supplies policy; unavailable ops means ordinary routing.
+    // Keep analytics initialization behind an actual policy match, after the asset shortcut.
+    const rotation = await getRotation(env);
+    const trap = rotation ? classifyTrap(url.pathname, rotation.rules) : null;
+    if (trap && rotation) {
+      const { handleTrap } = await import("./tripwire");
+      return handleTrap(request, env, ctx, trap, rotation);
     }
 
     // Hosted MCP endpoint (streamable HTTP, POST /mcp). Load its tool catalogue
