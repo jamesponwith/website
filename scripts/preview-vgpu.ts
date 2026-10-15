@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { interpretIntent, loadTypeSafeKey, parseSceneCommand, type IntentDecision, type IntentSource, type SceneValues } from "./prototype-intent";
+import { FabricError, NativeFabric } from "./prototype-fabric";
 const root = resolve(import.meta.dir, "..");
 const phux = Bun.which("phux");
 if (!phux) throw new Error("Install phux first; this preview uses a real isolated PHUX session.");
@@ -17,15 +18,18 @@ const apiKey = await loadTypeSafeKey();
 let jevAvailable = Boolean(apiKey);
 // Only the bridge receives the API key, never the scene PTY or browser.
 const inherited = Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith("PHUX_") && key !== "TYPESAFE_API_KEY"));
-const env = { ...inherited, PHUX_SOCKET: socket, XDG_RUNTIME_DIR: runtime, XDG_CONFIG_HOME: join(runtime, "config"), XDG_STATE_HOME: join(runtime, "state"), XDG_DATA_HOME: join(runtime, "data"), PHUX_SCENE_ENDPOINT: `http://127.0.0.1:${bridgePort}/tick`, PHUX_SCENE_TOKEN: token, SHELL: "/bin/sh", TERM: "xterm-256color" };
+const env = { ...inherited, PHUX_SOCKET: socket, XDG_RUNTIME_DIR: runtime, XDG_CONFIG_HOME: join(runtime, "config"), XDG_STATE_HOME: join(runtime, "state"), XDG_DATA_HOME: join(runtime, "data"), PHUX_SCENE_ENDPOINT: `http://127.0.0.1:${bridgePort}/tick`, PHUX_SCENE_TOKEN: token, PHUX_FABRIC_ENDPOINT: `http://127.0.0.1:${bridgePort}/fabric/tick`, PHUX_FABRIC_TOKEN: token, SHELL: "/bin/sh", TERM: "xterm-256color" };
+let fabric: NativeFabric;
 let state: Record<string, unknown> = { connected: false };
 let updatedAt = 0;
 let commandQueue = Promise.resolve();
 let lastIntent: IntentDecision | null = null;
-type SceneEvent = { id: string; messageId: string; at: number; from: string; to: string; type: string; status: string; payload: Record<string, unknown> };
+type SceneEvent = { id: string; sequence: number; messageId: string; at: number; from: string; to: string; type: string; status: string; payload: Record<string, unknown> };
 const events: SceneEvent[] = [];
+let sceneEventCursor = 0;
+const sceneStreamId = crypto.randomUUID();
 const event = (messageId: string, from: string, to: string, type: string, status: string, payload: Record<string, unknown>) => {
-  events.push({ id: crypto.randomUUID(), messageId, at: Date.now(), from, to, type, status, payload });
+  events.push({ id: crypto.randomUUID(), sequence: ++sceneEventCursor, messageId, at: Date.now(), from, to, type, status, payload });
   if (events.length > 96) events.splice(0, events.length - 96);
 };
 let appliedMessage: { id: string; payload: Record<string, unknown> } | null = null;
@@ -87,10 +91,14 @@ function publishViewDelivery() {
   event(appliedMessage.id, "scene", "views", "scene.state", "delivered", appliedMessage.payload);
   publishedMessage = revision;
 }
-function stateResponse() {
+function stateResponse(request: Request) {
   // This edge is observed only when a view actually requests the new state.
   publishViewDelivery();
-  return Response.json({ ...state, connected: Date.now()-updatedAt < 2000, runtime: "native phux · isolated PTY", lastIntent, jevAvailable, events, serverTime: Date.now() }, { headers: { "cache-control": "no-store" } });
+  const query = new URL(request.url).searchParams;
+  const compact = query.get("compact") === "1";
+  const after = query.has("stream") && query.get("stream") !== sceneStreamId ? 0 : Number(query.get("after")) || 0;
+  const receipt = compact && query.get("intent") === lastIntent?.id ? {} : { lastIntent };
+  return Response.json({ ...state, connected: Date.now()-updatedAt < 2000, runtime: "native phux · isolated PTY", ...receipt, jevAvailable, events: compact ? events.filter(event => event.sequence > after) : events, eventCursor: sceneEventCursor, streamId: sceneStreamId, serverTime: Date.now() }, { headers: { "cache-control": "no-store" } });
 }
 async function screenResponse() {
   try { return new Response(await run(["snapshot", "vgpu", "--json"]), { headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
@@ -133,12 +141,51 @@ async function intentResponse(request: Request) {
     return Response.json(decision, { headers: { "cache-control": "no-store" } });
   } catch (error) { return intentErrorResponse(error, id, source); }
 }
+function fabricRoute(action: (request: Request) => unknown | Promise<unknown>) {
+  return async (request: Request) => {
+    try { return Response.json(await action(request), { headers: { "cache-control": "no-store" } }); }
+    catch (error) { return Response.json({ error: error instanceof Error ? error.message : "Native fabric unavailable." }, { status: error instanceof FabricError ? error.status : 503 }); }
+  };
+}
+async function fabricBody(request: Request) {
+  const body = await readBody(request);
+  if (!body || Array.isArray(body) || typeof body !== "object") throw new FabricError("Send a JSON object.");
+  return body;
+}
+async function fabricScreenResponse(request: Request) {
+  try {
+    const sessionId = new URL(request.url).searchParams.get("sessionId") || "scene";
+    return new Response(await fabric.screen(sessionId), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+  } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "Native screen unavailable." }, { status: error instanceof FabricError ? error.status : 503 }); }
+}
+function fabricStateResponse(request: Request) {
+  const query = new URL(request.url).searchParams;
+  const compact = query.get("compact") === "1";
+  const knownRevision = query.get("revision");
+  const after = knownRevision && !knownRevision.startsWith(`${fabric.streamId}:`) ? 0 : Math.max(0, Number(query.get("after")) || 0);
+  const snapshot = fabric.snapshot({ compact, after });
+  const headers = { "cache-control": "no-store", "x-fabric-revision": snapshot.revision };
+  if (compact && after >= snapshot.eventCursor && query.get("revision") === snapshot.revision) return new Response(null, { status: 204, headers });
+  return Response.json(snapshot, { headers });
+}
 const routes: Record<string, (request: Request) => Response | Promise<Response>> = {
   "POST /tick": tickResponse,
   "GET /state": stateResponse,
   "GET /screen": screenResponse,
   "POST /command": commandResponse,
   "POST /intent": intentResponse,
+  "GET /fabric": fabricStateResponse,
+  "GET /fabric/session": fabricRoute(request => fabric.detail(new URL(request.url).searchParams.get("sessionId") || "scene")),
+  "POST /fabric/session": fabricRoute(async request => fabric.createSession(await fabricBody(request))),
+  "POST /fabric/host": fabricRoute(async request => fabric.createHost(await fabricBody(request))),
+  "DELETE /fabric/session": fabricRoute(async request => fabric.deleteSession(await fabricBody(request) as { sessionId: string })),
+  "DELETE /fabric/host": fabricRoute(async request => fabric.deleteHost(await fabricBody(request) as { hostId: string })),
+  "POST /fabric/command": fabricRoute(async request => {
+    const body = await fabricBody(request);
+    return fabric.command(body as { sessionId: string; action: "pulse" | "pause" | "resume" });
+  }),
+  "POST /fabric/tick": fabricRoute(async request => fabric.acceptTick(await fabricBody(request), request.headers.get("x-fabric-token"))),
+  "GET /fabric/screen": fabricScreenResponse,
 };
 const bridge = Bun.serve({
   hostname: "127.0.0.1", port: bridgePort, idleTimeout: 60,
@@ -151,12 +198,18 @@ const bridge = Bun.serve({
   },
 });
 const native = Bun.spawn([phux, "--socket", socket, "server", "--session", "preview", "--listen", `127.0.0.1:${nativePort}`, "--quic", "127.0.0.1:0"], { env, cwd: root, stdout: "ignore", stderr: "inherit" });
+fabric = new NativeFabric({
+  phux, root, runtime, socket, rootPid: native.pid, env, token,
+  rootState: () => ({ ...state, connected: Date.now() - updatedAt < 2000 }),
+  rootCommand: (action, id) => enqueue(() => dispatch([action === "pulse" ? "burst" : action], id)),
+});
 let astro: ReturnType<typeof Bun.spawn> | undefined;
 let closing = false;
 async function close() {
   if (closing) return;
   closing = true;
   astro?.kill("SIGTERM");
+  await fabric.close();
   native.kill("SIGTERM");
   bridge.stop(true);
   await native.exited;

@@ -48,12 +48,13 @@ export function isSiteHost(host: string): boolean {
 
 export function isDocsPath(pathname: string): boolean {
   const path = stripPageSuffix(pathname);
+  if (isVgpuConceptPath(path)) return false;
   return DOCS_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
 export function isMarketingOnlyPath(pathname: string): boolean {
   const path = stripPageSuffix(pathname);
-  return path === "/embed" || path.startsWith("/embed/") ||
+  return isVgpuConceptPath(path) || path === "/embed" || path.startsWith("/embed/") ||
     path === "/install" || path.startsWith("/install") ||
     path === "/demos" || path.startsWith("/demos/");
 }
@@ -78,6 +79,10 @@ export function routeRequest(host: string, url: URL): HostRoute {
     return redirectOn(DOCS_HOST, path, url.search);
   }
   return { kind: "asset" };
+}
+
+function isVgpuConceptPath(path: string): boolean {
+  return path === "/concepts/vgpu" || path.startsWith("/concepts/vgpu/");
 }
 
 function redirectOn(host: string, path: string, search: string): HostRoute {
