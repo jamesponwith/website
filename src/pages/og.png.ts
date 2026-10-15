@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import sharp from "sharp";
-import foxMark from "../../public/favicon.svg?raw";
 import { SITE } from "../lib/site";
 
 const entities: Record<string, string> = {
@@ -12,30 +11,44 @@ const entities: Record<string, string> = {
 };
 const xml = (value: string) => value.replace(/[&<>"']/g, (char) => entities[char]);
 
-// Terminal-surface palette plus the mark's lime. Chosen for a 500px-wide X
-// timeline crop: thick strokes, one accent, no hairlines.
+// Volume 03 glass, with the product terminal underneath. Strokes stay thick
+// because X and iMessage recompress this to about 500px.
 const C = {
-  bg: "#05060a",
-  surface: "#101218",
-  raised: "#171b24",
-  rule: "#2a3140",
-  fg: "#f4f5f7",
-  muted: "#c5c8d0",
-  dim: "#6d7484",
-  faint: "#3a4252",
-  live: "#bef264",
-  ok: "#9ece6a",
-  ask: "#e0af68",
-  blue: "#7aa2f7",
-  cyan: "#7dcfff",
+  bg: "#08090c",
+  glow: "#c5d0dc",
+  window: "#0e1218",
+  head: "#12171e",
+  side: "#0b0f14",
+  pane: "#0b0b0d",
+  quiet: "#0c1016",
+  rule: "#313a48",
+  border: "#8aa0b6",
+  fg: "#ededee",
+  muted: "#9aa3ae",
+  dim: "#5e6874",
+  faint: "#3a4350",
+  live: "#d7e0ea",
+  warm: "#cbb8a4",
+  selected: "#1c2633",
 };
 const SANS = `'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, 'DejaVu Sans', sans-serif`;
 
-// Pane text is token bars, never characters. The crop reads as a live terminal
-// and cannot look like a copied session.
-type Line = ([width: number, color: string] | ">" | "_")[];
+const frame = { x: 36, y: 32, w: 1128, h: 566 };
+const head = 64;
+const foot = 48;
+const side = 196;
+const bodyY = frame.y + head;
+const bodyH = frame.h - head - foot;
+const splitX = frame.x + side;
+const mainW = frame.w - side;
+const leftW = 568;
+const rightX = splitX + leftW;
+const rightW = mainW - leftW;
 
-function pane(x: number, y: number, lines: Line[], step = 34): string {
+type Token = [width: number, color: string] | ">" | "_";
+type Line = Token[];
+
+function bars(x: number, y: number, lines: Line[], step: number): string {
   return lines
     .map((line, row) => {
       const mid = y + row * step;
@@ -44,133 +57,96 @@ function pane(x: number, y: number, lines: Line[], step = 34): string {
         .map((token) => {
           const at = cursor;
           if (token === ">") {
-            cursor += 28;
-            return `<path d="M${at} ${mid - 9}l12 9-12 9" fill="none" stroke="${C.live}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+            cursor += 36;
+            return `<path d="M${at} ${mid - 11}l16 11-16 11" fill="none" stroke="${C.live}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
           }
           if (token === "_") {
-            return `<rect x="${at}" y="${mid - 13}" width="14" height="26" rx="2" fill="${C.live}"/>`;
+            return `<rect x="${at}" y="${mid - 14}" width="16" height="28" rx="2" fill="${C.live}"/>`;
           }
-          cursor += token[0] + 12;
-          return `<rect x="${at}" y="${mid - 6}" width="${token[0]}" height="12" rx="6" fill="${token[1]}"/>`;
+          cursor += token[0] + 14;
+          return `<rect x="${at}" y="${mid - 7}" width="${token[0]}" height="14" rx="7" fill="${token[1]}"/>`;
         })
         .join("");
     })
     .join("");
 }
 
-const MARK = { x: 76, y: 78, size: 156 };
-const markSvg = foxMark
-  .replace(/<\?xml[^>]*>/, "")
-  .replace(/<title[\s\S]*?<\/title>|<desc[\s\S]*?<\/desc>/g, "")
-  .replace(
-    /<svg[^>]*>/,
-    `<svg x="${MARK.x}" y="${MARK.y}" width="${MARK.size}" height="${MARK.size}" viewBox="0 0 512 512">`,
-  );
-
-const words = SITE.tagline.split(" ");
-const longerLine = (at: number) =>
-  Math.max(words.slice(0, at).join(" ").length, words.slice(at).join(" ").length);
-let breakAt = 1;
-for (let at = 2; at < words.length; at++) if (longerLine(at) < longerLine(breakAt)) breakAt = at;
-const tagline = [words.slice(0, breakAt).join(" "), words.slice(breakAt).join(" ")];
-
-const card = { x: 608, y: 112, w: 512, h: 452 };
-const back = { x: 684, y: 46, w: 436, h: 168 };
+function row(y: number, width: number, selected = false, live = false): string {
+  const x = frame.x;
+  const mark = selected ? C.live : C.faint;
+  return `
+    ${selected ? `<rect x="${x}" y="${y - 22}" width="${side}" height="48" fill="${C.selected}"/>` : ""}
+    ${selected ? `<rect x="${x}" y="${y - 22}" width="4" height="48" fill="${C.live}"/>` : ""}
+    <rect x="${x + 28}" y="${y - 9}" width="18" height="18" rx="4" fill="${mark}"/>
+    <rect x="${x + 60}" y="${y - 6}" width="${width}" height="12" rx="6" fill="${selected ? C.fg : C.dim}"/>
+    ${live ? `<circle cx="${x + side - 28}" cy="${y}" r="5" fill="${C.live}"/>` : ""}
+  `;
+}
 
 export const GET: APIRoute = async () => {
-  const nameInk = await sharp(
-    Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="140"><text x="0" y="112" font-family="${SANS}" font-size="112" font-weight="700" letter-spacing="-5">${xml(SITE.name)}</text></svg>`,
-    ),
-  )
-    .trim()
-    .png()
-    .toBuffer({ resolveWithObject: true });
-  const cursorX = 76 + nameInk.info.width + 24;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
-    <radialGradient id="bloom" cx="18%" cy="42%" r="48%">
-      <stop offset="0" stop-color="${C.live}" stop-opacity="0.34"/>
-      <stop offset="0.42" stop-color="${C.live}" stop-opacity="0.08"/>
-      <stop offset="1" stop-color="${C.live}" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#161b26"/>
-      <stop offset="1" stop-color="#0c0f15"/>
-    </linearGradient>
-    <pattern id="cells" width="28" height="28" patternUnits="userSpaceOnUse">
-      <circle cx="1.5" cy="1.5" r="1.15" fill="${C.faint}"/>
-    </pattern>
-    <clipPath id="mark-clip"><rect x="${MARK.x}" y="${MARK.y}" width="${MARK.size}" height="${MARK.size}" rx="32"/></clipPath>
-    <clipPath id="card-clip"><rect x="${card.x}" y="${card.y}" width="${card.w}" height="${card.h}" rx="24"/></clipPath>
-    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="42"/>
-    </filter>
-    <filter id="shadow" x="-18%" y="-12%" width="146%" height="142%">
-      <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#000" flood-opacity="0.62"/>
-    </filter>
+    <clipPath id="quiet"><rect x="${rightX}" y="${bodyY}" width="${rightW}" height="${bodyH}"/></clipPath>
   </defs>
-
   <rect width="1200" height="630" fill="${C.bg}"/>
-  <rect width="1200" height="630" fill="url(#cells)" opacity="0.45"/>
-  <rect width="1200" height="630" fill="url(#bloom)"/>
-  <ellipse cx="${MARK.x + MARK.size / 2}" cy="${MARK.y + MARK.size / 2}" rx="150" ry="130" fill="${C.live}" opacity="0.16" filter="url(#glow)"/>
+  <ellipse cx="1040" cy="48" rx="460" ry="240" fill="${C.glow}" opacity="0.16"/>
+  <ellipse cx="180" cy="600" rx="320" ry="160" fill="${C.glow}" opacity="0.06"/>
 
-  <g clip-path="url(#mark-clip)">${markSvg}</g>
-  <rect x="${MARK.x - 7}" y="${MARK.y - 7}" width="${MARK.size + 14}" height="${MARK.size + 14}" rx="38" fill="none" stroke="${C.live}" stroke-opacity="0.72" stroke-width="2.5"/>
+  <rect x="${frame.x}" y="${frame.y}" width="${frame.w}" height="${frame.h}" rx="10" fill="${C.window}" stroke="${C.border}" stroke-width="2.5"/>
+  <rect x="${frame.x + 1}" y="${frame.y + 1}" width="${frame.w - 2}" height="2" fill="${C.live}" opacity="0.28"/>
 
-  <text x="76" y="318" fill="${C.fg}" font-family="${SANS}" font-size="112" font-weight="700" letter-spacing="-5">${xml(SITE.name)}</text>
-  <rect x="${cursorX}" y="236" width="16" height="82" rx="3" fill="${C.live}"/>
-  <g font-family="${SANS}" font-size="40" font-weight="500" fill="${C.muted}" letter-spacing="-0.8">
-    <text x="76" y="402">${xml(tagline[0])}</text>
-    <text x="76" y="452">${xml(tagline[1])}</text>
-  </g>
-  <circle cx="86" cy="534" r="8" fill="${C.live}"/>
-  <text x="108" y="544" fill="${C.fg}" font-family="${SANS}" font-size="30" font-weight="600">${xml(SITE.domain)}</text>
-  <rect x="292" y="516" width="168" height="36" rx="18" fill="${C.raised}" stroke="${C.rule}"/>
-  <text x="376" y="540" text-anchor="middle" fill="${C.live}" font-family="${SANS}" font-size="18" font-weight="700" letter-spacing="1.6">RUNTIME</text>
+  <rect x="${frame.x}" y="${frame.y}" width="${frame.w}" height="${head}" fill="${C.head}"/>
+  <text x="${frame.x + 28}" y="${frame.y + 41}" fill="${C.fg}" font-family="${SANS}" font-size="30" font-weight="650">${xml(SITE.name)}</text>
+  <text x="${frame.x + 118}" y="${frame.y + 41}" fill="${C.muted}" font-family="${SANS}" font-size="20" font-weight="500">/ studio</text>
+  <rect x="742" y="${frame.y + 16}" width="148" height="32" rx="6" fill="${C.selected}"/>
+  <rect x="766" y="${frame.y + 27}" width="72" height="10" rx="5" fill="${C.fg}"/>
+  <rect x="902" y="${frame.y + 16}" width="112" height="32" rx="6" fill="none" stroke="${C.rule}" stroke-width="2"/>
+  <rect x="924" y="${frame.y + 27}" width="52" height="10" rx="5" fill="${C.dim}"/>
+  <circle cx="1088" cy="${frame.y + 32}" r="8" fill="${C.live}"/>
+  <rect x="1108" y="${frame.y + 26}" width="36" height="12" rx="6" fill="${C.muted}"/>
 
-  <g>
-    <rect x="${back.x}" y="${back.y}" width="${back.w}" height="${back.h}" rx="20" fill="${C.surface}" stroke="${C.rule}" stroke-width="1.5"/>
-    <circle cx="${back.x + 26}" cy="${back.y + 28}" r="6" fill="${C.faint}"/>
-    <circle cx="${back.x + 46}" cy="${back.y + 28}" r="6" fill="${C.faint}"/>
-    <circle cx="${back.x + 66}" cy="${back.y + 28}" r="6" fill="${C.faint}"/>
-    ${pane(back.x + 28, back.y + 78, [[">", [64, C.fg], [92, C.blue]], [[140, C.dim]]], 32)}
+  <rect x="${frame.x}" y="${bodyY}" width="${side}" height="${bodyH}" fill="${C.side}"/>
+  ${row(148, 92, true, true)}
+  ${row(212, 74)}
+  ${row(276, 108)}
+  ${row(340, 64, false, true)}
+  ${row(404, 86)}
+  <path d="M${splitX} ${bodyY}V${bodyY + bodyH}" stroke="${C.rule}" stroke-width="2"/>
+
+  <rect x="${splitX}" y="${bodyY}" width="${leftW}" height="${bodyH}" fill="${C.pane}"/>
+  ${bars(splitX + 32, bodyY + 58, [
+    [">", [88, C.fg], [124, C.muted]],
+    [[150, C.dim], [64, C.live]],
+    [[196, C.dim]],
+    [">", [72, C.fg], [96, C.muted]],
+    [[168, C.dim], [48, C.faint]],
+    [">", "_"],
+  ], 58)}
+
+  <g clip-path="url(#quiet)">
+    <rect x="${rightX}" y="${bodyY}" width="${rightW}" height="${bodyH}" fill="${C.quiet}"/>
+    <ellipse cx="${rightX + 180}" cy="${bodyY + bodyH - 8}" rx="210" ry="78" fill="none" stroke="${C.glow}" stroke-width="14" opacity="0.55"/>
+    <ellipse cx="${rightX + 180}" cy="${bodyY + bodyH + 18}" rx="150" ry="46" fill="${C.warm}" opacity="0.16"/>
+    <circle cx="${rightX + 36}" cy="${bodyY + 42}" r="8" fill="${C.warm}"/>
+    <rect x="${rightX + 56}" y="${bodyY + 35}" width="92" height="14" rx="7" fill="${C.muted}"/>
+    ${bars(rightX + 36, bodyY + 112, [
+      [[120, C.dim], [48, C.faint]],
+      [[84, C.dim]],
+      [[146, C.faint]],
+    ], 52)}
   </g>
-  <rect x="${card.x}" y="${card.y}" width="${card.w}" height="${card.h}" rx="24" fill="url(#card)" filter="url(#shadow)"/>
-  <g clip-path="url(#card-clip)">
-    <rect x="${card.x}" y="${card.y}" width="${card.w}" height="64" fill="${C.surface}"/>
-    <g fill="${C.faint}">
-      <circle cx="${card.x + 30}" cy="${card.y + 32}" r="7"/>
-      <circle cx="${card.x + 54}" cy="${card.y + 32}" r="7"/>
-      <circle cx="${card.x + 78}" cy="${card.y + 32}" r="7"/>
-    </g>
-    <circle cx="${card.x + card.w - 118}" cy="${card.y + 32}" r="6" fill="${C.live}"/>
-    <rect x="${card.x + card.w - 102}" y="${card.y + 26}" width="70" height="12" rx="6" fill="${C.live}" opacity="0.85"/>
-    <path d="M${card.x} ${card.y + 64.5}H${card.x + card.w}" stroke="${C.rule}"/>
-    ${pane(card.x + 36, card.y + 104, [
-      [">", [72, C.fg], [108, C.blue]],
-      [[168, C.dim], [54, C.cyan]],
-      [[132, C.dim]],
-      [[96, C.ok], [48, C.dim]],
-      [">", [58, C.fg], [84, C.cyan]],
-      [[186, C.dim]],
-      [[74, C.ask], [62, C.dim]],
-      [">", "_"],
-    ], 36)}
-    <rect x="${card.x}" y="${card.y + card.h - 58}" width="${card.w}" height="58" fill="${C.surface}"/>
-    <path d="M${card.x} ${card.y + card.h - 58.5}H${card.x + card.w}" stroke="${C.rule}"/>
-    <circle cx="${card.x + 36}" cy="${card.y + card.h - 29}" r="7" fill="${C.live}"/>
-    <rect x="${card.x + 54}" y="${card.y + card.h - 35}" width="54" height="12" rx="6" fill="${C.muted}"/>
-    <circle cx="${card.x + 168}" cy="${card.y + card.h - 29}" r="7" fill="${C.ask}"/>
-    <rect x="${card.x + 186}" y="${card.y + card.h - 35}" width="46" height="12" rx="6" fill="${C.faint}"/>
-    <circle cx="${card.x + 292}" cy="${card.y + card.h - 29}" r="7" fill="${C.cyan}"/>
-    <rect x="${card.x + 310}" y="${card.y + card.h - 35}" width="62" height="12" rx="6" fill="${C.faint}"/>
-  </g>
-  <rect x="${card.x + 1.5}" y="${card.y + 1.5}" width="${card.w - 3}" height="${card.h - 3}" rx="22.5" fill="none" stroke="${C.live}" stroke-opacity="0.8" stroke-width="2.5"/>
+  <path d="M${rightX} ${bodyY}V${bodyY + bodyH}" stroke="${C.rule}" stroke-width="2"/>
+
+  <path d="M${frame.x} ${frame.y + frame.h - foot}H${frame.x + frame.w}" stroke="${C.rule}" stroke-width="2"/>
+  <circle cx="${frame.x + 32}" cy="${frame.y + frame.h - 24}" r="6" fill="${C.live}"/>
+  <rect x="${frame.x + 50}" y="${frame.y + frame.h - 30}" width="72" height="12" rx="6" fill="${C.muted}"/>
+  <circle cx="${frame.x + 156}" cy="${frame.y + frame.h - 24}" r="6" fill="${C.warm}"/>
+  <rect x="${frame.x + 174}" y="${frame.y + frame.h - 30}" width="48" height="12" rx="6" fill="${C.dim}"/>
+  <circle cx="${frame.x + 256}" cy="${frame.y + frame.h - 24}" r="6" fill="${C.faint}"/>
+  <rect x="${frame.x + frame.w - 92}" y="${frame.y + frame.h - 32}" width="22" height="16" rx="3" fill="${C.faint}"/>
+  <rect x="${frame.x + frame.w - 62}" y="${frame.y + frame.h - 32}" width="22" height="16" rx="3" fill="${C.selected}" stroke="${C.live}" stroke-width="2"/>
 </svg>`;
+
   const image = await sharp(Buffer.from(svg)).png().toBuffer();
-  return new Response(image, {
-    headers: { "content-type": "image/png" },
-  });
+  return new Response(image, { headers: { "content-type": "image/png" } });
 };

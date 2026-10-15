@@ -17,7 +17,7 @@ export const SITE = {
   designMode: "terminal",
   // Names the /og.png artwork. Link previews cache by URL, so change this
   // whenever src/pages/og.png.ts draws a different picture.
-  previewArtwork: "signal-poster",
+  previewArtwork: "studio-crop",
   // Set when the WS demo backend is deployed. When empty the terminal island
   // renders the static poster + a "coming online" state instead of dialing out.
   demoWsUrl: import.meta.env.PUBLIC_PHUX_DEMO_WS ?? "",
