@@ -52,6 +52,22 @@ export class HostedClient {
         }
     }
     /**
+     * Focus the visible, published terminal whose canonical id was announced
+     * by `phux-panes` (for example `@1` or `host/@1`). Does not open a view.
+     *
+     * # Errors
+     * Refuses a missing, hidden, bootstrapping, or failed terminal.
+     * @param {string} id
+     */
+    focus_pane(id) {
+        const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.hostedclient_focus_pane(this.__wbg_ptr, ptr0, len0);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
      * Kill the focused terminal, ending its process, without closing its
      * siblings.
      *
@@ -92,12 +108,37 @@ export class HostedClient {
         }
     }
     /**
+     * Send at most 4096 UTF-8 bytes as one structured, trusted paste to the
+     * focused terminal. Empty text is a no-op; no Enter key is appended.
+     *
+     * # Errors
+     * Refuses larger payloads or a terminal/transport unavailable for input.
+     * @param {string} text
+     */
+    send_text(text) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.hostedclient_send_text(this.__wbg_ptr, ptr0, len0);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
      * Hold (or release) Ctrl for the next key typed at the terminal; the
      * canvas announces each change as a `phux-modifiers` event.
      * @param {boolean} held
      */
     set_ctrl_latch(held) {
         wasm.hostedclient_set_ctrl_latch(this.__wbg_ptr, held);
+    }
+    /**
+     * Opt into transparent default cells and no native pane borders. Explicit
+     * ANSI backgrounds, selection/search and the cursor remain visible.
+     * The default is opaque; changing appearance does not alter the session.
+     * @param {boolean} enabled
+     */
+    set_glass_mode(enabled) {
+        wasm.hostedclient_set_glass_mode(this.__wbg_ptr, enabled);
     }
     /**
      * Split the focused terminal using one new resource on this connection.
@@ -299,6 +340,9 @@ function __wbg_get_imports() {
         }, arguments); },
         __wbg_clearInterval_f1a050672da2658c: function(arg0, arg1) {
             arg0.clearInterval(arg1);
+        },
+        __wbg_clearRect_a5e36505218c247a: function(arg0, arg1, arg2, arg3, arg4) {
+            arg0.clearRect(arg1, arg2, arg3, arg4);
         },
         __wbg_clearTimeout_3629d6209dfcc46e: function(arg0) {
             const ret = clearTimeout(arg0);
@@ -1170,7 +1214,7 @@ function __wbg_get_imports() {
         },
         __wbindgen_generic_0000000000000003: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 8, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true__14);
+            const ret = makeMutClosure(arg0, arg1, wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true__17);
             return ret;
         },
         __wbindgen_generic_0000000000000004: function(arg0, arg1) {
@@ -1180,7 +1224,7 @@ function __wbg_get_imports() {
         },
         __wbindgen_generic_0000000000000005: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("undefined")], shim_idx: 7, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true__16);
+            const ret = makeMutClosure(arg0, arg1, wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true__19);
             return ret;
         },
         __wbindgen_generic_0000000000000006: function(arg0, arg1) {
@@ -1232,8 +1276,8 @@ function wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_
     wasm.wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true_(arg0, arg1, arg2);
 }
 
-function wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true__14(arg0, arg1, arg2) {
-    wasm.wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true__14(arg0, arg1, arg2);
+function wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true__17(arg0, arg1, arg2) {
+    wasm.wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true__17(arg0, arg1, arg2);
 }
 
 function wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___JsValue__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true_(arg0, arg1, arg2) {
@@ -1250,8 +1294,8 @@ function wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bin
     }
 }
 
-function wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true__16(arg0, arg1, arg2) {
-    const ret = wasm.wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true__16(arg0, arg1, arg2);
+function wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true__19(arg0, arg1, arg2) {
+    const ret = wasm.wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true__19(arg0, arg1, arg2);
     if (ret[1]) {
         throw takeFromExternrefTable0(ret[0]);
     }

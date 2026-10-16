@@ -1,6 +1,17 @@
 /* tslint:disable */
 /* eslint-disable */
 
+/** Visible terminal rectangle in canonical canvas cells; separators excluded. */
+export interface PaneDescriptor { id: string; x: number; y: number; cols: number; rows: number; cursorRow?: number; }
+/** Canonical geometry shared by pane-state and full-paint events. */
+export interface PanePresentation { panes: PaneDescriptor[]; cols: number; rows: number; }
+/** Detail of the bubbling phux-panes CustomEvent. */
+export interface PaneState extends PanePresentation { count: number; focused: string; pending: boolean; error?: string; }
+/** Detail of phux-render, emitted after a full paint, with actual backing pixels. */
+export interface PaneRenderDetail extends PanePresentation { pixelWidth: number; pixelHeight: number; }
+
+
+
 /**
  * A hosted session controller returned to JavaScript.
  */
@@ -28,6 +39,14 @@ export class HostedClient {
      */
     focus_next_pane(): void;
     /**
+     * Focus the visible, published terminal whose canonical id was announced
+     * by `phux-panes` (for example `@1` or `host/@1`). Does not open a view.
+     *
+     * # Errors
+     * Refuses a missing, hidden, bootstrapping, or failed terminal.
+     */
+    focus_pane(id: string): void;
+    /**
      * Kill the focused terminal, ending its process, without closing its
      * siblings.
      *
@@ -51,10 +70,24 @@ export class HostedClient {
      */
     send_key(key: string): void;
     /**
+     * Send at most 4096 UTF-8 bytes as one structured, trusted paste to the
+     * focused terminal. Empty text is a no-op; no Enter key is appended.
+     *
+     * # Errors
+     * Refuses larger payloads or a terminal/transport unavailable for input.
+     */
+    send_text(text: string): void;
+    /**
      * Hold (or release) Ctrl for the next key typed at the terminal; the
      * canvas announces each change as a `phux-modifiers` event.
      */
     set_ctrl_latch(held: boolean): void;
+    /**
+     * Opt into transparent default cells and no native pane borders. Explicit
+     * ANSI backgrounds, selection/search and the cursor remain visible.
+     * The default is opaque; changing appearance does not alter the session.
+     */
+    set_glass_mode(enabled: boolean): void;
     /**
      * Split the focused terminal using one new resource on this connection.
      *
@@ -105,10 +138,13 @@ export interface InitOutput {
     readonly hostedclient_close: (a: number) => void;
     readonly hostedclient_close_pane: (a: number) => [number, number];
     readonly hostedclient_focus_next_pane: (a: number) => [number, number];
+    readonly hostedclient_focus_pane: (a: number, b: number, c: number) => [number, number];
     readonly hostedclient_kill_pane: (a: number) => [number, number];
     readonly hostedclient_resize: (a: number, b: number, c: number) => void;
     readonly hostedclient_send_key: (a: number, b: number, c: number) => [number, number];
+    readonly hostedclient_send_text: (a: number, b: number, c: number) => [number, number];
     readonly hostedclient_set_ctrl_latch: (a: number, b: number) => void;
+    readonly hostedclient_set_glass_mode: (a: number, b: number) => void;
     readonly hostedclient_split_pane: (a: number, b: number, c: number) => [number, number];
     readonly start: (a: number, b: number, c: number, d: number, e: number, f: number) => any;
     readonly start_hosted: (a: number, b: number, c: number, d: number, e: number, f: number, g: any, h: number) => any;
@@ -118,9 +154,9 @@ export interface InitOutput {
     readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___u32__u32______true_: (a: number, b: number, c: number, d: number) => void;
     readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___JsValue__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true__16: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___wasm_bindgen_c41d5cbf289b5539___sys__Undefined__core_608f92abc48d28da___result__Result_____wasm_bindgen_c41d5cbf289b5539___JsError___true__19: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true__14: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke___web_sys_3ca46e9073013fcd___features__gen_MessageEvent__MessageEvent______true__17: (a: number, b: number, c: any) => void;
     readonly wasm_bindgen_c41d5cbf289b5539___convert__closures_____invoke_______true_: (a: number, b: number) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

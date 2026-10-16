@@ -1,4 +1,5 @@
 import GhosttySurface from "./GhosttySurface";
+import LiveWorkspace from "./live/LiveWorkspace";
 import { sceneFrame } from "./terminal-frames";
 import { isBrowserConcept } from "./transport";
 // A live local fabric: native sessions, independent host processes, optical views.
@@ -12,6 +13,9 @@ import "../../../styles/terminal-surface.css";
 import "./vibe.css";
 
 export default function SuperDemo({runtime,openTerminal}:{runtime:RuntimeControl;openTerminal:()=>void}) {
+  return isBrowserConcept ? <LiveWorkspace runtime={runtime}/> : <LegacySuperDemo runtime={runtime} openTerminal={openTerminal}/>;
+}
+function LegacySuperDemo({runtime,openTerminal}:{runtime:RuntimeControl;openTerminal:()=>void}) {
   const settings=useLiveScene(runtime.state),fabric=useFabric();
   const [controls]=useState(()=>typeof window!=='undefined'&&new URLSearchParams(window.location.search).has('controls'));
   const {layout,reorder}=useFabricLayout(fabric.state);
