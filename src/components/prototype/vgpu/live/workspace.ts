@@ -110,7 +110,8 @@ export class LiveWorkspace {
     const pane = this.frame.panes.find(p=>p.id === view.pane);
     const ctx = view.canvas.getContext("2d",{alpha:true});
     if (!pane || !ctx) return;
-    const box = view.canvas.getBoundingClientRect();
+    // A living pane scales visually; its projection keeps a sharp, stable backing store.
+    const box = {width:view.canvas.clientWidth,height:view.canvas.clientHeight};
     if (!box.width || !box.height) return;
     const rows = Math.min(view.rows,Math.max(3,Math.floor(box.height/16)));
     const crop = paneCrop(this.frame,pane,this.canvas.width,this.canvas.height,rows,Math.max(20,Math.floor(box.width/8)));

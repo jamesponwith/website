@@ -233,7 +233,7 @@ fn panel_surface(uv: vec2f) -> PanelSurface {
     let pane=rounded_panel(p,rects[i]);
     // Smooth union forms a meniscus where nearby panes meet, rather than
     // drawing two outlines through one another.
-    let fusion=18.0;
+    let fusion=18.0+14.0*clamp(params.glassMeta.y,0.0,1.0);
     let h=clamp(0.5+0.5*(pane.distance-field.distance)/fusion,0.0,1.0);
     field=PanelSurface(mix(pane.distance,field.distance,h)-fusion*h*(1.0-h),mix(pane.gradient,field.gradient,h));
   }
@@ -261,7 +261,12 @@ fn liquid_panels(uv: vec2f,backdrop: vec3f) -> vec3f {
   var color=backdrop*(1.0-shadow);
   if(d>max(aa,1.5)) { return color; }
   let depth=max(-d,0.0);
-  let bezel=16.0;
+  let energy=clamp(params.glassMeta.y,0.0,1.0);
+  let pulseAge=clamp(params.glassMeta.z,0.0,1.5);
+  // Interaction travels through the shallow meniscus only, leaving the flat
+  // glass and DOM text still. It is not a screen-wide illumination effect.
+  let ripple=sin(depth*0.52-pulseAge*14.0+dot(uv*viewport,vec2f(0.005,-0.003)));
+  let bezel=16.0+energy*2.5;
   let rim=clamp(1.0-depth/bezel,0.0,1.0);
   let strength=smoothstep(0.05,0.75,length(field.gradient));
   let normal=field.gradient/max(length(field.gradient),0.0001);
@@ -274,9 +279,9 @@ fn liquid_panels(uv: vec2f,backdrop: vec3f) -> vec3f {
   let sheen=exp(-dot((uv-vec2f(0.20,0.05))*vec2f(params.timing.y,1.0),(uv-vec2f(0.20,0.05))*vec2f(params.timing.y,1.0))*0.9);
   var seen=backdrop;
   if(depth<bezel+aa) {
-    let reach=-normal*(9.0+params.pointer.w*1.5)*rim*rim*strength;
+    let reach=-normal*(9.0+params.pointer.w*1.5+energy*(1.5+ripple*0.60))*rim*rim*strength;
     let refracted=clamp(uv+reach/viewport,vec2f(0.0),vec2f(1.0));
-    let split=reach*0.085/viewport;
+    let split=reach*(0.085+energy*0.012)/viewport;
     // Chromatic ray offsets are confined to the narrow bevel. The broad clear
     // pane and every pixel outside it reuse the original optical evaluation.
     seen=vec3f(optical_backdrop(clamp(refracted-split,vec2f(0.0),vec2f(1.0))).r,optical_backdrop(refracted).g,optical_backdrop(clamp(refracted+split,vec2f(0.0),vec2f(1.0))).b);
@@ -285,12 +290,12 @@ fn liquid_panels(uv: vec2f,backdrop: vec3f) -> vec3f {
   seen*=1.0-away*rim*rim*strength*0.12;
   // Broken broad glints reveal material thickness; no perimeter line is drawn.
   let glintMask=0.20+0.80*pow(0.5+0.5*sin(dot(uv*viewport,vec2f(0.013,-0.009))+params.timing.x*0.07),3.0);
-  let shoulder=exp(-pow((d+3.0)/5.5,2.0));
-  let specular=pow(facing,6.0)*attention*glintMask;
+  let shoulder=exp(-pow((d+3.0)/(5.5+energy*0.65),2.0));
+  let specular=pow(facing,6.0)*attention*glintMask*(1.0+energy*ripple*0.18);
   seen+=vec3f(0.77,0.86,0.95)*shoulder*specular*0.24;
   seen+=vec3f(0.20,0.27,0.34)*pow(facing,3.0)*pow(rim,2.5)*strength*0.18;
   seen+=vec3f(0.017,0.022,0.03)*pow(rim,5.0)*strength;
-  seen+=panel_microfacet(uv*viewport,params.timing.x)*rim*rim*strength*(0.4+facing*0.6);
+  seen+=panel_microfacet(uv*viewport,params.timing.x+pulseAge*energy*0.20)*rim*rim*strength*(0.4+facing*0.6)*(1.0+energy*0.12);
   return mix(color,seen,coverage);
 }
 @fragment fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {

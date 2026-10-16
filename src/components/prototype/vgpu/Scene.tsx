@@ -9,7 +9,7 @@ export type SceneSettings = {
   burst: number; paused: boolean; sceneTime?: number;
 };
 export const initialSettings: SceneSettings = { speed: 1, amplitude: 1, shape: 0, color: [0.96, 0.60, 0.29], burst: 0, paused: false };
-export type SceneGlass = { rects: [number,number,number,number][] };
+export type SceneGlass = { rects: [number,number,number,number][]; pulse?: number };
 type Pointer = { x: number; y: number; active: number };
 type SceneProps = { variant: number; settings: MutableRefObject<SceneSettings>; detached?: boolean; miniature?: boolean; active?: boolean; ambient?: boolean; input?:MutableRefObject<Pointer>; glass?:MutableRefObject<SceneGlass> };
 const ease = (x: number) => x * x * (3 - 2 * x);
@@ -157,12 +157,20 @@ export function Scene({ variant, settings, detached = false, miniature = false, 
         const rects = (glass?.current.rects ?? []).filter(rect => rect.length === 4 && rect.every(Number.isFinite) && rect[2] > 0 && rect[3] > 0).slice(0,4);
         data.glass0 = rects[0] ?? [0,0,0,0]; data.glass1 = rects[1] ?? [0,0,0,0];
         data.glass2 = rects[2] ?? [0,0,0,0]; data.glass3 = rects[3] ?? [0,0,0,0];
-        data.glassMeta = [rects.length,0,0,0];
+        const pulse = glass?.current.pulse;
+        const age = pulse === undefined ? Infinity : performance.now()-pulse;
+        const responding = !reduced.matches && Number.isFinite(age) && age >= 0 && age < 1500;
+        // A short, eased attack avoids a hard lighting flash. Hidden views do
+        // not render or replay the impulse when they return after it settles.
+        const energy = responding ? ease(Math.min(age/70,1))*ease(1-age/1500) : 0;
+        const pulseAge = responding ? age/1000 : 0;
+        data.glassMeta = [rects.length,energy,pulseAge,0];
+        element.dataset.glassEnergy = energy.toFixed(3);
         const key = rects.map(rect => rect.map(value => value.toFixed(5)).join(",")).join(";");
         if (element.dataset.glassLayout !== key) {
           element.dataset.glassLayout = key; element.dataset.glassCount = String(rects.length);
         }
-        return key;
+        return `${key}/${energy.toFixed(5)}/${pulseAge.toFixed(4)}`;
       };
       updateGlass();
       const field = effect(context, atmosphere, { set: { params: data } });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent } from "react";
 import { SITE } from "../../../../lib/site";
 import { Scene } from "../Scene";
 import { useLiveScene, type RuntimeControl } from "../runtime";
@@ -14,19 +14,34 @@ function PaneView({workspace,id,large=false}:{workspace:Workspace;id:string;larg
   return <canvas ref={canvas} role="img" aria-label={`${workspace.label(id)} · live PHUX terminal output`}/>;
 }
 
-function WorkspaceDialog({workspace,selected,close}:{workspace:Workspace;selected:string;close:()=>void}) {
+type SelectedView = {id:string;origin:DOMRect};
+function WorkspaceDialog({workspace,selected,close,pulse}:{workspace:Workspace;selected:SelectedView;close:()=>void;pulse:()=>void}) {
   const state = useSyncExternalStore(workspace.subscribe,workspace.getSnapshot,workspace.getSnapshot);
   const dialog = useRef<HTMLDialogElement>(null), target = useRef<HTMLDivElement>(null);
   const [error,setError] = useState("");
-  const action = (fn:()=>void) => {try {fn();workspace.focusInput();setError("");} catch(cause) {setError(cause instanceof Error?cause.message:String(cause));}};
-  useEffect(()=>{
-    dialog.current?.showModal();
-    const restore = target.current ? workspace.present(selected,target.current) : ()=>{};
-    return ()=>{restore();dialog.current?.close();};
+  const closing=useRef(false),timer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+  const action = (fn:()=>void) => {try {pulse();fn();workspace.focusInput();setError("");} catch(cause) {setError(cause instanceof Error?cause.message:String(cause));}};
+  const requestClose=()=>{
+    if(closing.current)return;
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches){close();return;}
+    closing.current=true;pulse();dialog.current?.classList.add("is-returning");
+    timer.current=setTimeout(close,440);
+  };
+  useLayoutEffect(()=>{
+    const element=dialog.current!;
+    element.showModal();element.style.animation="none";
+    const box=element.getBoundingClientRect(),origin=selected.origin;
+    element.style.setProperty("--liquid-origin-x",`${origin.x+origin.width/2-box.x-box.width/2}px`);
+    element.style.setProperty("--liquid-origin-y",`${origin.y+origin.height/2-box.y-box.height/2}px`);
+    element.style.setProperty("--liquid-origin-scale-x",String(Math.max(.1,origin.width/box.width)));
+    element.style.setProperty("--liquid-origin-scale-y",String(Math.max(.1,origin.height/box.height)));
+    element.style.removeProperty("animation");
+    const restore = target.current ? workspace.present(selected.id,target.current) : ()=>{};
+    return ()=>{clearTimeout(timer.current);restore();element.close();};
   },[workspace]);
   useEffect(()=>{workspace.followFocus();},[state.focused,workspace]);
-  return <dialog ref={dialog} className="live-terminal-dialog" onCancel={close} onClose={close} aria-label="Live PHUX workspace">
-    <header><div className="live-pane-tabs" role="group" aria-label="Live terminals">{state.panes.map(pane=><button key={pane.id} aria-pressed={state.focused===pane.id} onClick={()=>action(()=>workspace.focus(pane.id))}><i/>{workspace.label(pane.id)}</button>)}</div><button className="live-dialog-close" aria-label="Close terminal view" onClick={close}>×</button></header>
+  return <dialog ref={dialog} className="live-terminal-dialog" onCancel={event=>{event.preventDefault();requestClose();}} aria-label="Live PHUX workspace">
+    <header><div className="live-pane-tabs" role="group" aria-label="Live terminals">{state.panes.map(pane=><button key={pane.id} aria-pressed={state.focused===pane.id} onClick={()=>action(()=>workspace.focus(pane.id))}><i/>{workspace.label(pane.id)}</button>)}</div><button className="live-dialog-close" aria-label="Close terminal view" onClick={requestClose}>×</button></header>
     <div className="live-terminal-target" ref={target}/>
     <footer><div className="live-command-shortcuts">{["demo glass","ls","clear"].map(command=><button key={command} disabled={state.phase!=="live"} onClick={()=>action(()=>workspace.command(command))}>{command}<span>↵</span></button>)}</div><button className="live-split" disabled={state.pending||state.panes.length>=4||state.phase!=="live"} onClick={()=>action(()=>workspace.split())}>Split terminal ＋</button></footer>
     {(error||state.error)&&<p role="status" className="live-action-error">{error||state.error}</p>}
@@ -39,13 +54,13 @@ export default function LiveWorkspace({runtime}:{runtime:RuntimeControl}) {
   const state = useSyncExternalStore(workspace.subscribe,workspace.getSnapshot,workspace.getSnapshot);
   const stage = useRef<HTMLElement>(null), home = useRef<HTMLDivElement>(null);
   const settings = useLiveScene(runtime.state), pointer = useRef({x:0,y:0,active:0});
-  const [selected,setSelected] = useState<string|null>(null), [attempt,setAttempt] = useState(0);
+  const [selected,setSelected] = useState<SelectedView|null>(null), [attempt,setAttempt] = useState(0);
   const [seen,setSeen] = useState(false);
   const interacted = useRef(false);
   const branched = useRef(false), seeded = useRef(new Set<string>());
   const grow = useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
   const secondary = state.panes.slice(1);
-  const {glass,links} = useLiquidLayout(stage,state.panes.map(p=>p.id).join("|"),selected!==null);
+  const {glass,links,pulse,engaged} = useLiquidLayout(stage,state.panes.map(p=>p.id).join("|"),selected!==null,pointer);
   const signal = useRef(-10000);
   useEffect(()=>{
     clearTimeout(grow.current);grow.current=undefined;
@@ -56,7 +71,7 @@ export default function LiveWorkspace({runtime}:{runtime:RuntimeControl}) {
   useEffect(()=>{
     if (state.phase!=="live"||state.panes.length!==1||state.pending||selected||branched.current||interacted.current) return;
     // One real multiplexer split, on the existing admitted connection.
-    const timer = setTimeout(()=>{branched.current=true;if(interacted.current)return;try {workspace.split();}catch{}},350);
+    const timer = setTimeout(()=>{branched.current=true;if(interacted.current)return;try {pulse();workspace.split();}catch{}},350);
     return ()=>clearTimeout(timer);
   },[state.phase,state.panes.length,state.pending,selected]);
   useEffect(()=>{
@@ -74,10 +89,10 @@ export default function LiveWorkspace({runtime}:{runtime:RuntimeControl}) {
     root.addEventListener("phux-render",pulse);
     return ()=>{root.removeEventListener("phux-render",pulse);};
   },[]);
-  const open = (id:string) => {
+  const open = (id:string,node:HTMLElement) => {
     if(state.phase!=="live")return;
     interacted.current=true;clearTimeout(grow.current);grow.current=undefined;
-    setSelected(id);
+    pulse();setSelected({id,origin:node.getBoundingClientRect()});
   };
   const move = (event:PointerEvent<HTMLElement>) => {
     const box = event.currentTarget.getBoundingClientRect(), x = (event.clientX-box.x)/box.width, y = (event.clientY-box.y)/box.height;
@@ -88,8 +103,8 @@ export default function LiveWorkspace({runtime}:{runtime:RuntimeControl}) {
     grow.current = setTimeout(()=>{
       grow.current=undefined;
       const current=workspace.getSnapshot();
-      if(!canAutoGrow(current,interacted.current))return;
-      try {workspace.split();}catch{}
+      if(!canAutoGrow(current,interacted.current)||!engaged.current)return;
+      try {pulse();workspace.split();}catch{}
     },1100);
   };
   const primary = state.panes[0];
@@ -97,16 +112,16 @@ export default function LiveWorkspace({runtime}:{runtime:RuntimeControl}) {
     <div className="vibe-universe"><Scene variant={1} settings={settings} ambient input={pointer} glass={glass}/></div><div className="vibe-shade"/>
     {!selected&&<ParticleLinks links={links} signal={signal}/>}
     <div className="live-session-layout">
-      <article className="live-glass live-primary">
+      <article className="live-glass live-primary" data-pane-id={primary?.id}>
         <header><span><i className={`live-status-dot ${state.phase!=="live"?"is-waiting":""}`}/>{primary?workspace.label(primary.id):"Your workspace"}</span><small>{state.backend==="native"?"LINUX":state.backend==="edge"?"PHUX / EDGE":"PHUX"}</small></header>
-        {primary?<button className="live-pane-preview" disabled={state.phase!=="live"} aria-label={`Open ${workspace.label(primary.id)} live terminal`} onClick={()=>open(primary.id)}><PaneView workspace={workspace} id={primary.id} large/><span className="live-enter">Enter terminal ↗</span></button>:<div className="live-connection-state" role="status"><span>{state.phase==="connecting"?"Connecting your workspace…":state.error||"Opening PHUX…"}</span>{["closed","error"].includes(state.phase)&&<button onClick={()=>setAttempt(a=>a+1)}>Try again ↗</button>}</div>}
+        {primary?<button className="live-pane-preview" disabled={state.phase!=="live"} aria-label={`Open ${workspace.label(primary.id)} live terminal`} onClick={event=>open(primary.id,event.currentTarget.closest<HTMLElement>(".live-glass")!)}><PaneView workspace={workspace} id={primary.id} large/><span className="live-enter">Enter terminal ↗</span></button>:<div className="live-connection-state" role="status"><span>{state.phase==="connecting"?"Connecting your workspace…":state.error||"Opening PHUX…"}</span>{["closed","error"].includes(state.phase)&&<button onClick={()=>setAttempt(a=>a+1)}>Try again ↗</button>}</div>}
         {primary&&["closed","error"].includes(state.phase)&&<div className="live-reconnect" role="status"><p>{state.error}</p><button onClick={()=>setAttempt(a=>a+1)}>Start a fresh workspace ↗</button></div>}
         <footer><span>{state.phase==="live"?"LIVE SESSION":state.phase.toUpperCase()}</span><span>{state.panes.length>1?`${state.panes.length} terminals · one connection`:""}</span></footer>
       </article>
-      <div className="live-satellite-grid" aria-label="Terminals in this workspace">{secondary.map(pane=><article className="live-glass live-secondary" key={pane.id}><header><span><i className="live-status-dot"/>{workspace.label(pane.id)}</span><small>SAME WORKSPACE</small></header><button className="live-pane-preview" disabled={state.phase!=="live"} aria-label={`Open ${workspace.label(pane.id)} live terminal`} onClick={()=>open(pane.id)}><PaneView workspace={workspace} id={pane.id}/><span className="live-enter">↗</span></button></article>)}</div>
+      <div className="live-satellite-grid" aria-label="Terminals in this workspace">{secondary.map(pane=><article className="live-glass live-secondary" data-pane-id={pane.id} key={pane.id}><header><span><i className="live-status-dot"/>{workspace.label(pane.id)}</span><small>SAME WORKSPACE</small></header><button className="live-pane-preview" disabled={state.phase!=="live"} aria-label={`Open ${workspace.label(pane.id)} live terminal`} onClick={event=>open(pane.id,event.currentTarget.closest<HTMLElement>(".live-glass")!)}><PaneView workspace={workspace} id={pane.id}/><span className="live-enter">↗</span></button></article>)}</div>
     </div>
     <p className="live-session-hint">{seen?"Open a terminal. It’s yours.":"Move through it."}</p>
     <div className="live-source-home" ref={home}/>
-    {selected&&<WorkspaceDialog workspace={workspace} selected={selected} close={()=>setSelected(null)}/>}
+    {selected&&<WorkspaceDialog workspace={workspace} selected={selected} close={()=>setSelected(null)} pulse={pulse}/>}
   </section>;
 }

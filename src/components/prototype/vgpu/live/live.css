@@ -54,3 +54,18 @@
 .live-terminal-dialog .live-pane-tabs button{border-radius:18px}
 .live-glass:hover{background-color:#bedce707}
 .live-pane-preview:focus-visible,.live-pane-tabs button:focus-visible,.live-command-shortcuts button:focus-visible,.live-split:focus-visible{outline:2px solid #d6f3ff99;outline-offset:-3px}
+
+/* Living topology owns daughter transforms; no competing entrance animation. */
+.live-glass{animation:none}
+.live-primary{animation:liquid-arrive .7s both}
+.live-secondary{opacity:0;transform-origin:center;will-change:transform,opacity}
+.live-terminal-dialog[open]{animation:liquid-open .64s cubic-bezier(.2,.85,.2,1) both;transform-origin:center}
+.live-terminal-dialog.is-returning{animation:liquid-return .44s cubic-bezier(.55,0,.8,.35) both;pointer-events:none}
+.live-pane-tabs button{animation:liquid-tab .45s cubic-bezier(.2,.8,.2,1) both}
+.live-command-shortcuts button,.live-split,.live-dialog-close{transition:transform .22s,background .22s,color .22s}
+.live-command-shortcuts button:active,.live-split:active,.live-dialog-close:active{transform:scale(.91)}
+@keyframes liquid-arrive{from{opacity:0}to{opacity:1}}
+@keyframes liquid-open{from{opacity:.3;transform:translate(var(--liquid-origin-x,0px),var(--liquid-origin-y,0px)) scale(var(--liquid-origin-scale-x,.85),var(--liquid-origin-scale-y,.85))}to{opacity:1;transform:translate(0,0) scale(1)}}
+@keyframes liquid-return{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:.05;transform:translate(var(--liquid-origin-x,0px),var(--liquid-origin-y,0px)) scale(var(--liquid-origin-scale-x,.85),var(--liquid-origin-scale-y,.85))}}
+@keyframes liquid-tab{from{opacity:0;transform:translateY(5px) scale(.88)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.live-primary,.live-terminal-dialog[open],.live-pane-tabs button{animation:none}.live-command-shortcuts button,.live-split,.live-dialog-close{transition:none}}

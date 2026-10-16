@@ -21,7 +21,7 @@ function paintLinks(ctx:CanvasRenderingContext2D,links:LightLink[],now:number,si
     for(let i=0;i<28;i++){
       const seed=i*.61803398875+index*.19;
       const phase=seed%1,t=(now*.000105+seed)%1;
-      const envelope=Math.pow(Math.sin(t*Math.PI),.7);
+      const envelope=Math.pow(Math.sin(t*Math.PI),.7)*(link.strength??1);
       const lane=Math.sin(seed*17+now*.0004)*(2+phase*13);
       ctx.fillStyle=i%5===0?"#d2bfb0":"#c2eaf1";
       fleck(ctx,link,t,lane,phase,envelope*(.45+energy*.4));
