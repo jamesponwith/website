@@ -303,7 +303,7 @@ impl EdgeSession {
         {
             Err(SpawnError::SpawnFailed("edge supports only the default curated shell; commands, environment, agent bindings and retention options require native mode".to_owned()))
         } else {
-            self.create_terminal(initial_size)
+            self.create_terminal(initial_size, owner_terminal.as_ref())
         };
         vec![FrameKind::ResourceSpawned {
             request_id,
@@ -317,6 +317,7 @@ impl EdgeSession {
     fn create_terminal(
         &mut self,
         initial_size: Option<(u16, u16)>,
+        owner_terminal: Option<&ResourceId>,
     ) -> Result<ResourceId, SpawnError> {
         if self.terminals.len() >= MAX_TERMINALS {
             return Err(SpawnError::SpawnFailed(
@@ -336,12 +337,11 @@ impl EdgeSession {
             ));
         }
         let id = self.next_id;
-        self.terminals.push(Terminal::new(
-            id,
-            cols,
-            rows,
-            Shell::new(&self.mode, &self.snapshot_json),
-        ));
+        let mut shell = Shell::new(&self.mode, &self.snapshot_json);
+        if let Some(parent) = owner_terminal.and_then(|id| self.terminal_index(id).ok()) {
+            shell.inherit_presentation(&self.terminals[parent].shell);
+        }
+        self.terminals.push(Terminal::new(id, cols, rows, shell));
         self.next_id = next_id;
         Ok(ResourceId::new(id))
     }

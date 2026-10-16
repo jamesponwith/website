@@ -46,6 +46,10 @@ export interface PhuxController {
   resize(cols: number, rows: number): void;
   splitPane(axis: "vertical" | "horizontal"): void;
   focusNextPane(): void;
+  /** Focus one server-published terminal, including from a projected glass view. */
+  focusPane(id: string): void;
+  /** Send bounded text through the same real paste/input path as the keyboard. */
+  sendText(text: string): void;
   closePane(): void;
   /** Send one on-screen key (see THUMB_KEYS) as typed at the terminal. */
   sendKey(key: ThumbKey): void;
@@ -86,6 +90,8 @@ export interface MountOptions {
   cols: number;
   rows: number;
   mode?: "demo" | "portfolio" | "native";
+  /** Compose terminal glyphs over a host-owned glass surface. */
+  appearance?: "glass";
   signal?: AbortSignal;
   onEvent?: (event: HostedEvent) => void;
 }
@@ -116,6 +122,7 @@ export async function mountPhuxTerminal(
     },
     opts.signal,
   );
+  if (opts.appearance === "glass") mounted.set_glass_mode(true);
   let closed = false;
   const controller = {
     close() {
@@ -133,6 +140,12 @@ export async function mountPhuxTerminal(
     },
     focusNextPane() {
       mounted.focus_next_pane();
+    },
+    focusPane(id: string) {
+      mounted.focus_pane(id);
+    },
+    sendText(text: string) {
+      mounted.send_text(text);
     },
     closePane() {
       mounted.close_pane();

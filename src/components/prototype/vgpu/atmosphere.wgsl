@@ -3,6 +3,7 @@
 struct Params {
   timing: vec4f, scene: vec4f, color: vec4f, pointer: vec4f,
   morph: vec4f, topology: vec4f,
+  glass0: vec4f, glass1: vec4f, glass2: vec4f, glass3: vec4f, glassMeta: vec4f,
 }
 @group(0) @binding(0) var<uniform> params: Params;
 const PI: f32 = 3.141592654;
@@ -179,7 +180,7 @@ fn optical_mode(p: vec2f,t: f32,mode: f32) -> vec3f {
   if (mode<4.5) { return folded_light(p,t); }
   return architecture(p,t);
 }
-@fragment fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+fn optical_backdrop(uv: vec2f) -> vec3f {
   let aspect = params.timing.y;
   let t = params.timing.x;
   var p = (uv-0.5)*vec2f(aspect,1.0)*2.0;
@@ -205,7 +206,102 @@ fn optical_mode(p: vec2f,t: f32,mode: f32) -> vec3f {
   let grain = (hash(floor(uv*params.topology.xy))-0.5)*0.003;
   color += vec3f(grain);
   color *= 1.0-smoothstep(0.45,2.8,length((uv-0.5)*vec2f(aspect,1.0)))*0.55;
-  // Filmic highlight roll-off keeps the brightest caustic a warm white.
-  color = vec3f(1.0)-exp(-max(color,vec3f(0.0))*1.24);
+  return color;
+}
+
+// DOM-aligned liquid panes, measured in CSS pixels. The same optical field is
+// evaluated at the refracted ray, so light genuinely moves through the bevel.
+struct PanelSurface { distance: f32, gradient: vec2f }
+fn rounded_panel(p: vec2f, rect: vec4f) -> PanelSurface {
+  let viewport = max(params.topology.xy,vec2f(1.0));
+  let local = p-rect.xy*viewport;
+  let halfSize = rect.zw*viewport*0.5;
+  let radius = min(clamp(min(halfSize.x,halfSize.y)*0.22,10.0,26.0),min(halfSize.x,halfSize.y));
+  let q = abs(local)-halfSize+radius;
+  let outer = max(q,vec2f(0.0));
+  let outsideLength = length(outer);
+  var gradient = select(vec2f(0.0,1.0),vec2f(1.0,0.0),q.x>q.y);
+  if (outsideLength>0.0001) { gradient=outer/outsideLength; }
+  gradient *= sign(local);
+  return PanelSurface(outsideLength+min(max(q.x,q.y),0.0)-radius,gradient);
+}
+fn panel_surface(uv: vec2f) -> PanelSurface {
+  let rects = array<vec4f,4>(params.glass0,params.glass1,params.glass2,params.glass3);
+  let p = uv*max(params.topology.xy,vec2f(1.0));
+  var field = PanelSurface(100000.0,vec2f(0.0,1.0));
+  for (var i=0u;i<min(u32(params.glassMeta.x),4u);i++) {
+    let pane=rounded_panel(p,rects[i]);
+    // Smooth union forms a meniscus where nearby panes meet, rather than
+    // drawing two outlines through one another.
+    let fusion=18.0+14.0*clamp(params.glassMeta.y,0.0,1.0);
+    let h=clamp(0.5+0.5*(pane.distance-field.distance)/fusion,0.0,1.0);
+    field=PanelSurface(mix(pane.distance,field.distance,h)-fusion*h*(1.0-h),mix(pane.gradient,field.gradient,h));
+  }
+  return field;
+}
+fn panel_microfacet(p: vec2f,t: f32) -> vec3f {
+  // Two quiet inversion folds split grazing light into tiny prismatic shards.
+  // They modulate the bevel only; no fracture grid crosses the pane's text.
+  var q=p*0.017+vec2f(t*0.006,-t*0.004);
+  for(var i=0;i<2;i++) { q=rotate2(abs(q)-vec2f(0.62,0.41),0.67)*1.37; }
+  let plane=sin(q.x*2.2+q.y*1.3);
+  let crease=exp(-abs(q.x+q.y*0.58)*34.0);
+  let spectrum=0.5+0.5*cos(vec3f(0.0,2.1,4.2)+plane*3.8);
+  return spectrum*(0.004+crease*0.019);
+}
+fn liquid_panels(uv: vec2f,backdrop: vec3f) -> vec3f {
+  let viewport=max(params.topology.xy,vec2f(1.0));
+  let field=panel_surface(uv);
+  let d=field.distance;
+  // Antialias against actual backing pixels, including ambient pixel budgets.
+  let aa=max(length(viewport)/max(length(max(params.topology.zw,vec2f(1.0))),1.0),0.65);
+  let coverage=1.0-smoothstep(-aa,aa,d);
+  let shadowD=panel_surface(uv-vec2f(4.0,11.0)/viewport).distance;
+  let shadow=exp(-max(shadowD,0.0)/18.0)*(1.0-smoothstep(-14.0,0.0,-shadowD))*0.16;
+  var color=backdrop*(1.0-shadow);
+  if(d>max(aa,1.5)) { return color; }
+  let depth=max(-d,0.0);
+  let energy=clamp(params.glassMeta.y,0.0,1.0);
+  let pulseAge=clamp(params.glassMeta.z,0.0,1.5);
+  // Interaction travels through the shallow meniscus only, leaving the flat
+  // glass and DOM text still. It is not a screen-wide illumination effect.
+  let ripple=sin(depth*0.52-pulseAge*14.0+dot(uv*viewport,vec2f(0.005,-0.003)));
+  let bezel=16.0+energy*2.5;
+  let rim=clamp(1.0-depth/bezel,0.0,1.0);
+  let strength=smoothstep(0.05,0.75,length(field.gradient));
+  let normal=field.gradient/max(length(field.gradient),0.0001);
+  let key=normalize(vec2f(-0.72,-0.69));
+  let facing=max(dot(normal,key),0.0);
+  let away=max(-dot(normal,key),0.0);
+  let pointerPos=(params.pointer.xy*vec2f(0.5,-0.5)+0.5)*viewport;
+  let toward=normalize(pointerPos-uv*viewport+vec2f(0.001));
+  let attention=1.0+pow(max(dot(normal,toward),0.0),4.0)*params.pointer.z*0.26;
+  let sheen=exp(-dot((uv-vec2f(0.20,0.05))*vec2f(params.timing.y,1.0),(uv-vec2f(0.20,0.05))*vec2f(params.timing.y,1.0))*0.9);
+  var seen=backdrop;
+  if(depth<bezel+aa) {
+    let reach=-normal*(9.0+params.pointer.w*1.5+energy*(1.5+ripple*0.60))*rim*rim*strength;
+    let refracted=clamp(uv+reach/viewport,vec2f(0.0),vec2f(1.0));
+    let split=reach*(0.085+energy*0.012)/viewport;
+    // Chromatic ray offsets are confined to the narrow bevel. The broad clear
+    // pane and every pixel outside it reuse the original optical evaluation.
+    seen=vec3f(optical_backdrop(clamp(refracted-split,vec2f(0.0),vec2f(1.0))).r,optical_backdrop(refracted).g,optical_backdrop(clamp(refracted+split,vec2f(0.0),vec2f(1.0))).b);
+  }
+  seen=seen*vec3f(0.94,0.965,0.99)+vec3f(0.0045,0.006,0.0085)+vec3f(0.008,0.010,0.014)*sheen;
+  seen*=1.0-away*rim*rim*strength*0.12;
+  // Broken broad glints reveal material thickness; no perimeter line is drawn.
+  let glintMask=0.20+0.80*pow(0.5+0.5*sin(dot(uv*viewport,vec2f(0.013,-0.009))+params.timing.x*0.07),3.0);
+  let shoulder=exp(-pow((d+3.0)/(5.5+energy*0.65),2.0));
+  let specular=pow(facing,6.0)*attention*glintMask*(1.0+energy*ripple*0.18);
+  seen+=vec3f(0.77,0.86,0.95)*shoulder*specular*0.24;
+  seen+=vec3f(0.20,0.27,0.34)*pow(facing,3.0)*pow(rim,2.5)*strength*0.18;
+  seen+=vec3f(0.017,0.022,0.03)*pow(rim,5.0)*strength;
+  seen+=panel_microfacet(uv*viewport,params.timing.x+pulseAge*energy*0.20)*rim*rim*strength*(0.4+facing*0.6)*(1.0+energy*0.12);
+  return mix(color,seen,coverage);
+}
+@fragment fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+  var color=optical_backdrop(uv);
+  if(params.glassMeta.x>0.0) { color=liquid_panels(uv,color); }
+  // Filmic highlight roll-off is shared by the optical world and liquid panes.
+  color=vec3f(1.0)-exp(-max(color,vec3f(0.0))*1.24);
   return vec4f(color,1.0);
 }
