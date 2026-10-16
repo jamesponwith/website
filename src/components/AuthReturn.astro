@@ -19,6 +19,8 @@
       ? (Object.hasOwn(messages, code) ? messages[code] : messages.provider_unavailable)
       : undefined;
     document.documentElement.dataset.nativeAuthResult = result;
+    // Pin the return view before either homepage island can hydrate.
+    document.documentElement.dataset.homeHero = "classic";
     if (error) document.documentElement.dataset.nativeAuthError = error;
     else delete document.documentElement.dataset.nativeAuthError;
     authUrl.searchParams.delete("auth");

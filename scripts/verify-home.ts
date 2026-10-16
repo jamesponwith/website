@@ -44,7 +44,7 @@ try {
       body: JSON.stringify({ ok: true, status: "invited" }),
     });
   });
-  await page.goto(base);
+  await page.goto(`${base}/?hero=classic`);
   assert.equal((await page.getByRole("heading", { level: 1 }).innerText()).trim(), "phux");
   assert.equal(await page.locator("#how-it-works").count(), 0, "no homepage explainer");
   assert.equal(await page.locator(".hero-headline, .live-invitation, .features").count(), 0, "the landing carries no slogan block");

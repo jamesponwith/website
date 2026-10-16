@@ -181,7 +181,50 @@ fn optical_mode(p: vec2f,t: f32,mode: f32) -> vec3f {
   if (mode<4.5) { return folded_light(p,t); }
   return architecture(p,t);
 }
+// The live workspace is one unbounded liquid material. Broad studio reflections
+// travel through the same field sampled by the panes; there is no opaque object
+// or separate artwork behind them. Two analytic folds keep refraction cheap.
+fn living_glass_world(uv: vec2f) -> vec3f {
+  let aspect=params.timing.y;
+  let t=params.timing.x;
+  let mode=mix(params.morph.x,params.morph.y,clamp(params.morph.z,0.0,1.0));
+  let amplitude=clamp(params.scene.x,0.2,2.8);
+  let attention=params.pointer.xy*vec2f(0.024,-0.020);
+  let p=(uv-vec2f(0.61,0.48))*vec2f(aspect,1.0)*2.0-attention;
+  let q=rotate2(p,-0.36+mode*0.027);
+  let a=q.x*1.08+t*0.045+mode*0.18;
+  let b=q.x*1.71-t*0.028;
+  let curl=(0.24+amplitude*0.035)*sin(a)+0.075*sin(b);
+  let slope=(0.2592+amplitude*0.0378)*cos(a)+0.12825*cos(b);
+  let across=q.y-curl;
+  let lower=q.y+0.55+0.18*sin(q.x*0.81+t*0.024);
+  let width=0.19+0.045*sin(q.x*0.76-t*0.020);
+  let shoulder=exp(-pow((across+0.060)/width,2.0));
+  let inner=exp(-pow((across-0.095)/(width*0.47),2.0));
+  let lip=exp(-pow((across+0.155)/(0.027+0.011*cos(a)),2.0));
+  let second=exp(-pow(lower/0.29,2.0));
+  let secondLip=exp(-pow((lower+0.11)/0.045,2.0));
+  let film=exp(-pow((across+0.235)/(0.065+0.016*cos(b)),2.0));
+  // Soft normal-dependent reflection changes slowly with the living sheet.
+  let normal=normalize(vec3f(-slope*0.24,across*0.45,0.72));
+  let grazing=pow(1.0-abs(normal.z),2.0);
+  let body=0.5+0.5*sin(q.x*0.53+q.y*0.69+t*0.014);
+  let softbox=exp(-pow((q.x-0.4)/1.8,2.0));
+  let silver=mix(vec3f(0.54,0.64,0.73),clamp(palette(),vec3f(0.0),vec3f(1.0)),0.12);
+  let ice=vec3f(0.32,0.47,0.61);
+  let warm=vec3f(0.36,0.245,0.17);
+  var color=mix(vec3f(0.006,0.009,0.014),vec3f(0.017,0.025,0.034),body);
+  color+=silver*(shoulder*0.33+lip*0.68+secondLip*0.17+film*0.085)*softbox;
+  color+=ice*(inner*0.18+second*0.075+grazing*0.07);
+  color+=warm*exp(-pow((lower-0.28)/0.43,2.0))*0.035;
+  // Shallow absorption reads as folded glass, never an opaque black cutout.
+  color*=1.0-exp(-pow((across-0.22)/0.13,2.0))*0.25;
+  let edgeFalloff=1.0-smoothstep(0.55,2.5,length((uv-0.5)*vec2f(aspect,1.0)))*0.37;
+  let grain=(hash(floor(uv*max(params.topology.xy,vec2f(1.0))))-0.5)*0.00085;
+  return max(color*edgeFalloff+vec3f(grain),vec3f(0.0));
+}
 fn optical_backdrop(uv: vec2f) -> vec3f {
+  if(params.glassMeta.w>0.5) { return living_glass_world(uv); }
   let aspect = params.timing.y;
   let t = params.timing.x;
   var p = (uv-0.5)*vec2f(aspect,1.0)*2.0;
