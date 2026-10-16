@@ -642,3 +642,49 @@ fn portfolio_selection_and_detail_survive_hibernation_independently() {
     let mut migrated = EdgeSession::restore_inner(legacy, "portfolio", &snapshot).unwrap();
     assert!(vt(&attach(&mut migrated)).contains("https://example.com/two"));
 }
+
+#[test]
+fn manual_splits_inherit_only_the_exact_parent_presentation_without_editing_input() {
+    let mut session = EdgeSession::new(80, 24, "demo", "");
+    attach(&mut session);
+    let default_child = spawn(&mut session, 40);
+    assert!(vt(&attach_resource(&mut session, default_child.clone())).contains(" $ "));
+    type_text(&mut session, ResourceId::new(1), "theme glass");
+    enter(&mut session, ResourceId::new(1));
+    type_text(&mut session, ResourceId::new(1), "echo user-pending");
+    let glass_child = spawn(&mut session, 41);
+    let greeting = vt(&attach_resource(&mut session, glass_child.clone()));
+    assert!(greeting.contains("phux / workspace"));
+    assert!(greeting.ends_with("›\x1b[0m "));
+    assert!(!greeting.contains(" $ "));
+    assert!(
+        !greeting.contains("user-pending"),
+        "pending input is never cloned"
+    );
+    assert!(vt(&enter(&mut session, ResourceId::new(1))).contains("\r\nuser-pending\r\n"));
+
+    // The default sibling remains authoritative for its own new split, even
+    // while another terminal in this session has opted into glass.
+    let mut request = spawn_request(42);
+    if let FrameKind::SpawnResource { owner_terminal, .. } = &mut request {
+        *owner_terminal = Some(default_child);
+    }
+    let result = exchange(&mut session, request);
+    let FrameKind::ResourceSpawned {
+        result: SpawnResult::Ok(id),
+        ..
+    } = &result[0]
+    else {
+        panic!("expected successful default-parent spawn");
+    };
+    let default_greeting = vt(&attach_resource(&mut session, id.clone()));
+    assert!(default_greeting.contains(" $ "));
+    assert!(!default_greeting.contains("phux / workspace"));
+    let restored = EdgeSession::restore_inner(&session.checkpoint(), "demo", "").unwrap();
+    assert!(
+        restored.terminals[restored.terminal_index(&glass_child).unwrap()]
+            .shell
+            .greeting()
+            .ends_with("›\x1b[0m ".as_bytes())
+    );
+}

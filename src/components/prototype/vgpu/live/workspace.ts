@@ -54,6 +54,8 @@ export class LiveWorkspace {
       const client = await mountPhuxTerminal({wsUrl,canvasId:this.canvas.id,cols:120,rows:24,mode:"demo",appearance:"glass",signal:abort.signal,onEvent:this.lifecycle});
       if (abort.signal.aborted) { client.close(); return; }
       this.client = client;
+      // Establish presentation before the fresh terminal becomes interactive.
+      if (this.state.backend==="edge") client.sendText("theme glass\n");
       this.update({phase:"live"});
       this.schedulePaint();
     } catch {

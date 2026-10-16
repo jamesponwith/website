@@ -14,10 +14,13 @@ const VIOLET: &str = "\x1b[38;5;141m"; // flux violet
 const CYAN: &str = "\x1b[38;5;80m"; // signal cyan
 const DIM: &str = "\x1b[2m";
 const BOLD: &str = "\x1b[1m";
+const ICE: &str = "\x1b[38;2;169;198;217m";
+const QUIET_ICE: &str = "\x1b[38;2;133;164;186m";
 
 /// A curated, OS-less shell. Owns the current input line and a tiny FS.
 pub struct Shell {
     line: String,
+    glass: bool,
     portfolio: Option<PortfolioShell>,
 }
 
@@ -25,13 +28,22 @@ impl Shell {
     pub fn new(mode: &str, snapshot_json: &str) -> Self {
         Self {
             line: String::new(),
+            glass: false,
             portfolio: (mode == "portfolio" || mode == "native-fallback")
                 .then(|| PortfolioShell::new(snapshot_json, mode == "native-fallback")),
         }
     }
 
+    /// New split resources inherit only presentation, never pending user input.
+    pub fn inherit_presentation(&mut self, parent: &Self) {
+        self.glass = parent.glass;
+    }
+
     /// The prompt string (on its own, no leading newline).
     fn prompt(&self) -> String {
+        if self.glass {
+            return format!("{QUIET_ICE}›{RESET} ");
+        }
         format!("{VIOLET}phux{RESET} {DIM}demo{RESET} $ ")
     }
 
@@ -39,6 +51,9 @@ impl Shell {
     pub fn greeting(&self) -> Vec<u8> {
         if let Some(portfolio) = &self.portfolio {
             return portfolio.render().into_bytes();
+        }
+        if self.glass {
+            return format!("{}{}{}", glass_workspace(), self.prompt(), self.line).into_bytes();
         }
         let mut o = String::new();
         o.push_str("\x1b[2J\x1b[H"); // clear + home
@@ -99,7 +114,28 @@ impl Shell {
 
     fn submit_line(&mut self) -> Vec<u8> {
         let line = std::mem::take(&mut self.line);
-        format!("\r\n{}{}", run(line.trim()), self.prompt()).into_bytes()
+        let output = self.execute(line.trim());
+        format!("\r\n{output}{}", self.prompt()).into_bytes()
+    }
+
+    fn execute(&mut self, line: &str) -> String {
+        let words: Vec<_> = line.split_whitespace().collect();
+        match words.as_slice() {
+            ["demo", "glass" | "workspace"] => {
+                self.glass = true;
+                glass_workspace()
+            }
+            ["theme", "glass"] => {
+                self.glass = true;
+                "\x1b[2J\x1b[H".to_owned()
+            }
+            ["theme", "default"] => {
+                self.glass = false;
+                "\x1b[2J\x1b[H".to_owned()
+            }
+            ["theme", ..] => "theme: choose glass or default\r\n".to_owned(),
+            _ => run(line),
+        }
     }
 
     /// Validate before mutation, so rejected input never partially edits a line.
@@ -166,17 +202,19 @@ impl Shell {
             },
             None => ShellCheckpoint::Demo {
                 line: self.line.clone(),
+                glass: self.glass,
             },
         }
     }
 
     pub fn restore(&mut self, checkpoint: ShellCheckpoint) -> Result<(), String> {
         match (checkpoint, &mut self.portfolio) {
-            (ShellCheckpoint::Demo { line }, None) => {
+            (ShellCheckpoint::Demo { line, glass }, None) => {
                 if line.len() > MAX_INPUT_LINE_BYTES || line.chars().any(char::is_control) {
                     return Err("checkpoint input line is invalid".to_owned());
                 }
                 self.line = line;
+                self.glass = glass;
                 Ok(())
             }
             (ShellCheckpoint::Portfolio { selected, detail }, Some(portfolio)) => {
@@ -199,8 +237,19 @@ impl Shell {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ShellCheckpoint {
-    Demo { line: String },
-    Portfolio { selected: usize, detail: bool },
+    Demo {
+        line: String,
+        #[serde(default, skip_serializing_if = "is_false")]
+        glass: bool,
+    },
+    Portfolio {
+        selected: usize,
+        detail: bool,
+    },
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Deserialize, Default)]
@@ -467,6 +516,8 @@ fn help() -> String {
          \r\n\
          {BOLD}demo{RESET}        the showcase: logo, truecolor, hyperlinks\r\n\
          {BOLD}demo links{RESET}  OSC 8 hyperlinks + 24-bit truecolor\r\n\
+         {BOLD}demo glass{RESET}  a compact workspace + minimal prompt\r\n\
+         {BOLD}theme glass / default{RESET}  choose the prompt\r\n\
          {BOLD}ls / cat{RESET}    poke around a tiny in-memory filesystem\r\n\
          {BOLD}echo / pwd / whoami / uname / clear{RESET}\r\n\
          \r\n\
@@ -503,6 +554,17 @@ fn cat(args: &[&str]) -> String {
     FILES.iter().find(|(n, _)| n == name).map_or_else(
         || format!("cat: {name}: No such file\r\n"),
         |(_, c)| (*c).to_owned(),
+    )
+}
+
+/// Intentional server output for an opt-in live glass workspace. This describes
+/// the real edge multiplexer/view contract, without claiming native processes.
+fn glass_workspace() -> String {
+    format!(
+        "\x1b[2J\x1b[H{ICE}phux / workspace{RESET}\r\n\
+        one session\r\n\
+        independent panes\r\n\
+        {QUIET_ICE}echo hello · ls · help{RESET}\r\n"
     )
 }
 
@@ -594,5 +656,110 @@ mod tests {
         let rendered = shell.render();
         assert!(rendered.contains("Native shells are busy or unavailable"));
         assert!(rendered.contains("instant edge tour"));
+    }
+
+    #[test]
+    fn glass_workspace_is_opt_in_compact_real_output_without_color_bars() {
+        let mut shell = Shell::new("demo", "");
+        let output = String::from_utf8(shell.paste("demo glass\n").unwrap()).unwrap();
+        let screen = output.split("\x1b[2J\x1b[H").last().unwrap();
+        assert!(screen.contains("phux / workspace"));
+        assert!(screen.contains("one session"));
+        assert!(screen.contains("independent panes"));
+        assert!(screen.ends_with("›\x1b[0m "));
+        assert_eq!(screen.matches("\r\n").count(), 4);
+        // Strip SGR fields before measuring these deliberately narrow lines.
+        let mut visible = String::new();
+        let mut escape = false;
+        for ch in screen.chars() {
+            if ch == '\x1b' {
+                escape = true;
+                continue;
+            }
+            if escape {
+                if ch == 'm' {
+                    escape = false;
+                }
+                continue;
+            }
+            visible.push(ch);
+        }
+        assert!(visible.lines().all(|line| line.chars().count() <= 24));
+        for unwanted in [" $ ", "truecolor", "48;", "Linux", "CPU", "connected", "──"] {
+            assert!(
+                !screen.contains(unwanted),
+                "unexpected claim or decoration: {unwanted}"
+            );
+        }
+        assert!(
+            Shell::new("demo", "").prompt().ends_with(" $ "),
+            "other embeds keep their prompt"
+        );
+    }
+
+    #[test]
+    fn glass_theme_changes_prompt_only_and_preserves_real_commands() {
+        let mut shell = Shell::new("demo", "");
+        let output =
+            String::from_utf8(shell.paste("theme glass\necho hello\nls\n").unwrap()).unwrap();
+        assert!(output.contains("\x1b[2J\x1b[H"));
+        assert!(output.contains("hello\r\n"));
+        assert!(output.contains("README"));
+        assert!(
+            !output.contains("phux / workspace"),
+            "prompt-only theme stays quiet"
+        );
+        let restored = String::from_utf8(shell.paste("theme default\n").unwrap()).unwrap();
+        assert!(restored.ends_with(" $ "));
+    }
+
+    #[test]
+    fn glass_theme_survives_checkpoint_and_legacy_state_keeps_default() {
+        let mut shell = Shell::new("demo", "");
+        shell.paste("theme glass\necho pending").unwrap();
+        let saved = serde_json::to_string(&shell.checkpoint()).unwrap();
+        let mut restored = Shell::new("demo", "");
+        restored
+            .restore(serde_json::from_str(&saved).unwrap())
+            .unwrap();
+        assert!(restored.glass);
+        assert_eq!(restored.line, "echo pending");
+        assert!(
+            String::from_utf8(restored.greeting())
+                .unwrap()
+                .ends_with("›\x1b[0m echo pending")
+        );
+        let legacy = serde_json::from_str(r#"{"kind":"demo","line":"echo old"}"#).unwrap();
+        restored.restore(legacy).unwrap();
+        assert!(!restored.glass);
+        assert_eq!(
+            serde_json::to_string(&Shell::new("demo", "").checkpoint()).unwrap(),
+            r#"{"kind":"demo","line":""}"#
+        );
+    }
+
+    #[test]
+    fn theme_refusals_do_not_mutate_presentation_or_portfolio_modes() {
+        let mut shell = Shell::new("demo", "");
+        let output = String::from_utf8(shell.paste("theme neon\n").unwrap()).unwrap();
+        assert!(output.contains("theme: choose glass or default"));
+        assert!(!shell.glass);
+        shell.paste("theme glass\ntheme default extra\n").unwrap();
+        assert!(shell.glass);
+        assert!(
+            Shell::new("portfolio", "{}")
+                .paste("theme glass\n")
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn explicit_color_demo_is_still_available_after_glass_opt_in() {
+        let mut shell = Shell::new("demo", "");
+        let output =
+            String::from_utf8(shell.paste("demo workspace\ndemo colors\n").unwrap()).unwrap();
+        assert!(shell.glass);
+        assert!(output.contains("truecolor:"));
+        assert!(output.contains("\x1b[48;2;"));
     }
 }
