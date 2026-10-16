@@ -4,6 +4,7 @@ struct Params {
   timing: vec4f, scene: vec4f, color: vec4f, pointer: vec4f,
   morph: vec4f, topology: vec4f,
   glass0: vec4f, glass1: vec4f, glass2: vec4f, glass3: vec4f, glassMeta: vec4f,
+  neck0: vec4f, neck1: vec4f, neck2: vec4f, neckRadii: vec4f,
 }
 @group(0) @binding(0) var<uniform> params: Params;
 const PI: f32 = 3.141592654;
@@ -211,7 +212,7 @@ fn optical_backdrop(uv: vec2f) -> vec3f {
 
 // DOM-aligned liquid panes, measured in CSS pixels. The same optical field is
 // evaluated at the refracted ray, so light genuinely moves through the bevel.
-struct PanelSurface { distance: f32, gradient: vec2f }
+struct PanelSurface { distance: f32, gradient: vec2f, bridge: f32 }
 fn rounded_panel(p: vec2f, rect: vec4f) -> PanelSurface {
   let viewport = max(params.topology.xy,vec2f(1.0));
   let local = p-rect.xy*viewport;
@@ -223,19 +224,42 @@ fn rounded_panel(p: vec2f, rect: vec4f) -> PanelSurface {
   var gradient = select(vec2f(0.0,1.0),vec2f(1.0,0.0),q.x>q.y);
   if (outsideLength>0.0001) { gradient=outer/outsideLength; }
   gradient *= sign(local);
-  return PanelSurface(outsideLength+min(max(q.x,q.y),0.0)-radius,gradient);
+  return PanelSurface(outsideLength+min(max(q.x,q.y),0.0)-radius,gradient,0.0);
+}
+fn liquid_bridge(p: vec2f,ends: vec4f,radius: f32) -> PanelSurface {
+  let viewport=max(params.topology.xy,vec2f(1.0));
+  let a=ends.xy*viewport;
+  let segment=(ends.zw-ends.xy)*viewport;
+  let along=clamp(dot(p-a,segment)/max(dot(segment,segment),0.0001),0.0,1.0);
+  let radial=p-a-segment*along;
+  let radialLength=length(radial);
+  // A zero-length bridge remains a finite droplet, never a NaN normal.
+  let normal=radial/max(radialLength,0.0001);
+  return PanelSurface(radialLength-max(radius*viewport.y,0.0),normal,1.0);
+}
+fn fuse_surface(a: PanelSurface,b: PanelSurface,width: f32) -> PanelSurface {
+  let h=clamp(0.5+0.5*(b.distance-a.distance)/width,0.0,1.0);
+  return PanelSurface(mix(b.distance,a.distance,h)-width*h*(1.0-h),
+    mix(b.gradient,a.gradient,h),mix(b.bridge,a.bridge,h));
 }
 fn panel_surface(uv: vec2f) -> PanelSurface {
   let rects = array<vec4f,4>(params.glass0,params.glass1,params.glass2,params.glass3);
   let p = uv*max(params.topology.xy,vec2f(1.0));
-  var field = PanelSurface(100000.0,vec2f(0.0,1.0));
+  var field = PanelSurface(100000.0,vec2f(0.0,1.0),0.0);
   for (var i=0u;i<min(u32(params.glassMeta.x),4u);i++) {
     let pane=rounded_panel(p,rects[i]);
     // Smooth union forms a meniscus where nearby panes meet, rather than
     // drawing two outlines through one another.
     let fusion=18.0+14.0*clamp(params.glassMeta.y,0.0,1.0);
-    let h=clamp(0.5+0.5*(pane.distance-field.distance)/fusion,0.0,1.0);
-    field=PanelSurface(mix(pane.distance,field.distance,h)-fusion*h*(1.0-h),mix(pane.gradient,field.gradient,h));
+    field=fuse_surface(field,pane,fusion);
+  }
+  let bridges=array<vec4f,3>(params.neck0,params.neck1,params.neck2);
+  // Capsules and panes share one distance field and gradient. Their junctions
+  // are flared menisci, so a moving child stretches the parent's glass body.
+  for(var i=0u;i<min(u32(params.neckRadii.w),3u);i++) {
+    let bridge=liquid_bridge(p,bridges[i],params.neckRadii[i]);
+    let fusion=14.0+10.0*clamp(params.glassMeta.y,0.0,1.0);
+    field=fuse_surface(field,bridge,fusion);
   }
   return field;
 }
@@ -296,6 +320,9 @@ fn liquid_panels(uv: vec2f,backdrop: vec3f) -> vec3f {
   seen+=vec3f(0.20,0.27,0.34)*pow(facing,3.0)*pow(rim,2.5)*strength*0.18;
   seen+=vec3f(0.017,0.022,0.03)*pow(rim,5.0)*strength;
   seen+=panel_microfacet(uv*viewport,params.timing.x+pulseAge*energy*0.20)*rim*rim*strength*(0.4+facing*0.6)*(1.0+energy*0.12);
+  // A narrow living thread still catches a broad grazing reflection against a
+  // dark optical field. It inherits the pane material, without a line overlay.
+  seen+=vec3f(0.16,0.21,0.27)*field.bridge*rim*rim*strength*(0.13+facing*0.24);
   return mix(color,seen,coverage);
 }
 @fragment fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {

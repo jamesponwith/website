@@ -9,7 +9,11 @@ export type SceneSettings = {
   burst: number; paused: boolean; sceneTime?: number;
 };
 export const initialSettings: SceneSettings = { speed: 1, amplitude: 1, shape: 0, color: [0.96, 0.60, 0.29], burst: 0, paused: false };
-export type SceneGlass = { rects: [number,number,number,number][]; pulse?: number };
+export type SceneGlass = {
+  rects: [number,number,number,number][]; pulse?: number;
+  /** Normalized stage endpoints and radius / stage height; at most three. */
+  necks?: [number,number,number,number,number][];
+};
 type Pointer = { x: number; y: number; active: number };
 type SceneProps = { variant: number; settings: MutableRefObject<SceneSettings>; detached?: boolean; miniature?: boolean; active?: boolean; ambient?: boolean; input?:MutableRefObject<Pointer>; glass?:MutableRefObject<SceneGlass> };
 const ease = (x: number) => x * x * (3 - 2 * x);
@@ -152,11 +156,28 @@ export function Scene({ variant, settings, detached = false, miniature = false, 
         morph: [current.from, current.to, current.progress, 0],
         topology: [Math.max(cssWidth,1), Math.max(cssHeight,1), target.size[0], target.size[1]],
         glass0: [0,0,0,0], glass1: [0,0,0,0], glass2: [0,0,0,0], glass3: [0,0,0,0], glassMeta: [0,0,0,0],
+        neck0: [0,0,0,0], neck1: [0,0,0,0], neck2: [0,0,0,0], neckRadii: [0,0,0,0],
       };
       const updateGlass = () => {
         const rects = (glass?.current.rects ?? []).filter(rect => rect.length === 4 && rect.every(Number.isFinite) && rect[2] > 0 && rect[3] > 0).slice(0,4);
         data.glass0 = rects[0] ?? [0,0,0,0]; data.glass1 = rects[1] ?? [0,0,0,0];
         data.glass2 = rects[2] ?? [0,0,0,0]; data.glass3 = rects[3] ?? [0,0,0,0];
+        // Fixed-size uniforms keep malformed/extreme layout data out of the GPU.
+        // Endpoints may briefly leave the viewport while a pane buds or retracts.
+        const necks = rects.length === 0 ? [] : (glass?.current.necks ?? [])
+          .filter(neck => neck.length === 5 && neck.every(Number.isFinite) && neck[4] > 0)
+          .slice(0,3).map(neck => [
+            ...neck.slice(0,4).map(value => Math.max(-0.5,Math.min(1.5,value))),
+            Math.min(neck[4],0.12),
+          ]);
+        data.neck0 = necks[0]?.slice(0,4) ?? [0,0,0,0];
+        data.neck1 = necks[1]?.slice(0,4) ?? [0,0,0,0];
+        data.neck2 = necks[2]?.slice(0,4) ?? [0,0,0,0];
+        data.neckRadii = [necks[0]?.[4] ?? 0,necks[1]?.[4] ?? 0,necks[2]?.[4] ?? 0,necks.length];
+        const neckKey = necks.map(neck => neck.map(value => value.toFixed(6)).join(",")).join(";");
+        if (element.dataset.glassNecks !== neckKey) {
+          element.dataset.glassNecks = neckKey; element.dataset.glassNeckCount = String(necks.length);
+        }
         const pulse = glass?.current.pulse;
         const age = pulse === undefined ? Infinity : performance.now()-pulse;
         const responding = !reduced.matches && Number.isFinite(age) && age >= 0 && age < 1500;
@@ -170,7 +191,7 @@ export function Scene({ variant, settings, detached = false, miniature = false, 
         if (element.dataset.glassLayout !== key) {
           element.dataset.glassLayout = key; element.dataset.glassCount = String(rects.length);
         }
-        return `${key}/${energy.toFixed(5)}/${pulseAge.toFixed(4)}`;
+        return `${key}/${neckKey}/${energy.toFixed(5)}/${pulseAge.toFixed(4)}`;
       };
       updateGlass();
       const field = effect(context, atmosphere, { set: { params: data } });

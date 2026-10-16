@@ -37,8 +37,8 @@
 .live-dialog-caption{display:flex;justify-content:space-between;gap:12px;padding:14px 22px;font:8px var(--lab-mono);color:#87a4b4}.live-dialog-caption>span:first-child{display:flex;align-items:center;gap:8px}
 .live-action-error{padding:0 22px 15px;color:#deb69d;font:10px/1.6 var(--lab-mono)}
 @keyframes live-attach{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
-@media(max-width:999px){.live-session-stage{padding-top:100px;align-items:start}.live-session-layout{grid-template-columns:1fr;max-width:680px;gap:30px}.live-satellite-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.live-primary .live-pane-preview{height:138px}.live-primary{max-width:100%}}
-@media(max-width:560px){.live-session-stage{padding:66px 22px 92px}.live-primary .live-pane-preview{height:130px}.live-glass header{padding-inline:15px}.live-satellite-grid{gap:20px}.live-secondary header{padding-inline:10px;font-size:8px}.live-secondary header small{display:none}.live-secondary .live-pane-preview{height:102px;padding-inline:10px}.live-session-layout{gap:30px}.live-terminal-dialog{width:calc(100vw - 24px);max-height:calc(100svh - 24px)}.live-terminal-dialog>header{padding-inline:9px}.live-pane-tabs{gap:0}.live-pane-tabs button{font-size:9px;padding-inline:9px}.live-terminal-target{margin:14px 12px 10px;height:32svh}.live-terminal-dialog>footer{padding-inline:12px;gap:9px;flex-wrap:wrap}.live-command-shortcuts button,.live-split{font-size:9px;padding:8px 10px;gap:10px}.live-dialog-caption{padding:12px;font-size:6px}}
+@media(max-width:999px){.vibe-stage.live-session-stage{padding-top:100px;align-items:start}.live-session-layout{grid-template-columns:1fr;max-width:680px;gap:30px}.live-satellite-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.live-primary .live-pane-preview{height:138px}.live-primary{max-width:100%}}
+@media(max-width:560px){.vibe-stage.live-session-stage{padding:66px 22px 92px}.live-primary .live-pane-preview{height:130px}.live-glass header{padding-inline:15px}.live-satellite-grid{gap:20px}.live-secondary header{padding-inline:10px;font-size:8px}.live-secondary header small{display:none}.live-secondary .live-pane-preview{height:102px;padding-inline:10px}.live-session-layout{gap:30px}.live-terminal-dialog{width:calc(100vw - 24px);max-height:calc(100svh - 24px)}.live-terminal-dialog>header{padding-inline:9px}.live-pane-tabs{gap:0}.live-pane-tabs button{font-size:9px;padding-inline:9px}.live-terminal-target{margin:14px 12px 10px;height:32svh}.live-terminal-dialog>footer{padding-inline:12px;gap:9px;flex-wrap:wrap}.live-command-shortcuts button,.live-split{font-size:9px;padding:8px 10px;gap:10px}.live-dialog-caption{padding:12px;font-size:6px}}
 @media(prefers-reduced-motion:reduce){.live-glass{animation:none}.live-enter{transition:none}}
 
 .live-reconnect{position:absolute;inset:46px 0 32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#0b141ee8;z-index:5;font:10px/1.7 var(--lab-mono);padding:22px;text-align:center;color:#b9d1dc}.live-reconnect button{padding:10px 14px;border:1px solid #b9d4e533;border-radius:4px}
@@ -49,16 +49,19 @@
 
 .live-session-stage>.vibe-universe{inset:0}
 .live-session-stage:has(.gpu-scene[data-renderer^="vgpu"]) .live-glass{backdrop-filter:none}
+.live-session-stage:has(.gpu-scene[data-renderer^="vgpu"]) .live-glass{background:transparent;box-shadow:none}
 .live-session-stage.has-terminal-open .live-session-layout{opacity:0;pointer-events:none}
 .live-session-layout{transition:opacity .25s}
 .live-terminal-dialog .live-pane-tabs button{border-radius:18px}
-.live-glass:hover{background-color:#bedce707}
+.live-glass:hover .live-enter{color:#d6f3ff}
 .live-pane-preview:focus-visible,.live-pane-tabs button:focus-visible,.live-command-shortcuts button:focus-visible,.live-split:focus-visible{outline:2px solid #d6f3ff99;outline-offset:-3px}
 
 /* Living topology owns daughter transforms; no competing entrance animation. */
 .live-glass{animation:none}
 .live-primary{animation:liquid-arrive .7s both}
 .live-secondary{opacity:0;transform-origin:center;will-change:transform,opacity}
+@media(max-width:999px){.live-satellite-grid>.live-secondary:last-child:nth-child(odd){grid-column:1/-1;width:calc((100% - 22px)/2);justify-self:center}}
+@media(max-width:560px){.live-satellite-grid>.live-secondary:last-child:nth-child(odd){width:calc((100% - 20px)/2)}}
 .live-terminal-dialog[open]{animation:liquid-open .64s cubic-bezier(.2,.85,.2,1) both;transform-origin:center}
 .live-terminal-dialog.is-returning{animation:liquid-return .44s cubic-bezier(.55,0,.8,.35) both;pointer-events:none}
 .live-pane-tabs button{animation:liquid-tab .45s cubic-bezier(.2,.8,.2,1) both}
@@ -69,3 +72,6 @@
 @keyframes liquid-return{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:.05;transform:translate(var(--liquid-origin-x,0px),var(--liquid-origin-y,0px)) scale(var(--liquid-origin-scale-x,.85),var(--liquid-origin-scale-y,.85))}}
 @keyframes liquid-tab{from{opacity:0;transform:translateY(5px) scale(.88)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.live-primary,.live-terminal-dialog[open],.live-pane-tabs button{animation:none}.live-command-shortcuts button,.live-split,.live-dialog-close{transition:none}}
+
+@media(min-width:700px) and (max-width:999px){.live-satellite-grid[data-count="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}.live-satellite-grid[data-count="3"]>.live-secondary:last-child{grid-column:auto;width:auto;justify-self:stretch}}
+@media(min-width:561px) and (max-width:699px){.vibe-stage.live-session-stage{padding-top:66px;padding-bottom:64px}.live-session-layout{gap:24px}.live-secondary .live-pane-preview{height:108px}}
