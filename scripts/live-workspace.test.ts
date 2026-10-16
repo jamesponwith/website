@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { paneCrop, paneViewport, readLiveFrame } from "../src/components/prototype/vgpu/live/frames";
 import { canAutoGrow } from "../src/components/prototype/vgpu/live/automation";
-import { advanceSpring, buddingRect, distanceToRect } from "../src/components/prototype/vgpu/live/living";
+import { advanceRect, advanceSpring, buddingRect, distanceToRect } from "../src/components/prototype/vgpu/live/living";
 
 const frame = {cols:120,rows:24,panes:[{id:"@1",x:0,y:0,cols:59,rows:24,cursorRow:3},{id:"@2",x:60,y:0,cols:60,rows:24,cursorRow:23}]};
 test("real published pane geometry preserves separators and independent resources",()=>{
@@ -61,4 +61,15 @@ test("a living pane starts within its parent and settles into its exact organize
     const rect=buddingRect(slot,parent,i/100,1);
     expect(rect.width).toBeGreaterThan(0);expect(rect.height).toBeGreaterThan(0);
   }
+});
+
+test("adding a sibling retargets an existing pane continuously into its new slot",()=>{
+  const original={x:30,y:450,width:250,height:160},target={x:300,y:450,width:250,height:160};
+  let state={rect:original,velocity:{x:0,y:0,width:0,height:0}};
+  expect(advanceRect(state,target,0).rect).toEqual(original);
+  state=advanceRect(state,target,1/60);
+  expect(state.rect.x).toBeGreaterThan(original.x);expect(state.rect.x).toBeLessThan(original.x+4);
+  for(let i=0;i<180;i++)state=advanceRect(state,target,1/60);
+  expect(state.rect.x).toBeCloseTo(target.x,6);
+  expect(state.rect.width).toBe(target.width);expect(state.rect.height).toBe(target.height);
 });

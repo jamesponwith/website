@@ -1,5 +1,6 @@
 export type Spring = {position:number;velocity:number};
 export type LiquidRect = {x:number;y:number;width:number;height:number};
+export type RectSpring = {rect:LiquidRect;velocity:LiquidRect};
 export const easeBetween = (lo:number,hi:number,value:number) => {
   const t=Math.max(0,Math.min(1,(value-lo)/(hi-lo)));
   return t*t*(3-2*t);
@@ -14,6 +15,15 @@ export function advanceSpring(state:Spring,target:number,elapsed:number):Spring 
 }
 export function distanceToRect(x:number,y:number,rect:LiquidRect) {
   return Math.hypot(Math.max(rect.x-x,0,x-rect.x-rect.width),Math.max(rect.y-y,0,y-rect.y-rect.height));
+}
+/** Retarget an existing organized slot without teleporting its live surface. */
+export function advanceRect(state:RectSpring,target:LiquidRect,elapsed:number):RectSpring {
+  const rect={...state.rect},velocity={...state.velocity};
+  for(const key of ["x","y","width","height"] as const){
+    const next=advanceSpring({position:rect[key],velocity:velocity[key]},target[key],elapsed);
+    rect[key]=next.position;velocity[key]=next.velocity;
+  }
+  return {rect,velocity};
 }
 /** A daughter begins inside its parent, stretches through a neck, then settles. */
 export function buddingRect(target:LiquidRect,parent:LiquidRect,amount:number,index:number):LiquidRect {

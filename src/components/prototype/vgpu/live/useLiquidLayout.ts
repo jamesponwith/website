@@ -1,11 +1,11 @@
 import { useLayoutEffect, useRef, type RefObject, type MutableRefObject } from "react";
-import { advanceSpring, buddingRect, distanceToRect, easeBetween, type LiquidRect, type Spring } from "./living";
+import { advanceRect, advanceSpring, buddingRect, distanceToRect, easeBetween, type LiquidRect, type RectSpring, type Spring } from "./living";
 
 export type Point = {x:number;y:number};
 export type LightLink = [Point,Point,Point,Point] & {strength?:number};
 export type GlassLayout = {rects:[number,number,number,number][];pulse?:number};
 type Attention = {x:number;y:number;active:number};
-type Pane = {id:string;node:HTMLElement;rest:LiquidRect;parent?:string;spring:Spring};
+type Pane = {id:string;node:HTMLElement;rest:LiquidRect;slot:RectSpring;parent?:string;spring:Spring};
 const normalize=(rect:LiquidRect,width:number,height:number):[number,number,number,number]=>[(rect.x+rect.width/2)/width,(rect.y+rect.height/2)/height,rect.width/width,rect.height/height];
 const localRect=(rect:DOMRect,base:DOMRect):LiquidRect=>({x:rect.x-base.x,y:rect.y-base.y,width:rect.width,height:rect.height});
 
@@ -26,6 +26,33 @@ function presentPane(pane:Pane,rect:LiquidRect,amount:number) {
   pane.node.style.pointerEvents=amount>.78?"auto":"none";
   pane.node.inert=amount<.78;
 }
+function advanceSlot(pane:Pane,dt:number,reduced:boolean) {
+  pane.slot=reduced?{rect:pane.rest,velocity:{x:0,y:0,width:0,height:0}}:advanceRect(pane.slot,pane.rest,dt);
+  const keys=["x","y","width","height"] as const;
+  return keys.every(key=>Math.abs(pane.slot.rect[key]-pane.rest[key])<.05&&Math.abs(pane.slot.velocity[key])<.1);
+}
+function advancePane(pane:Pane,target:number,dt:number,reduced:boolean) {
+  pane.spring=reduced?{position:target,velocity:0}:advanceSpring(pane.spring,target,dt);
+  const amountReady=Math.abs(pane.spring.position-target)<.0003&&Math.abs(pane.spring.velocity)<.001;
+  const slotReady=advanceSlot(pane,dt,reduced);
+  return amountReady&&slotReady;
+}
+function presentLayout(list:Pane[],width:number,height:number) {
+  const primary=list[0];
+  if(!primary)return {rects:[] as GlassLayout["rects"],links:[] as LightLink[]};
+  const displayed=new Map<string,LiquidRect>([[primary.id,primary.slot.rect]]);
+  const rects=[normalize(primary.slot.rect,width,height)],links:LightLink[]=[];
+  presentPane(primary,primary.slot.rect,1);
+  list.slice(1).forEach((pane,index)=>{
+    const parent=displayed.get(pane.parent||"")||primary.slot.rect;
+    const p=Math.max(0,Math.min(1,pane.spring.position));
+    const rect=buddingRect(pane.slot.rect,parent,p,index);
+    presentPane(pane,rect,p);displayed.set(pane.id,rect);
+    if(p>.015)rects.push(normalize(rect,width,height));
+    if(p>.22)links.push(connection(parent,rect,easeBetween(.22,.85,p)));
+  });
+  return {rects,links};
+}
 
 /** One spring loop owns DOM transforms, optical geometry and particle attachment. */
 export function useLiquidLayout(stage:RefObject<HTMLElement|null>,identity:string,expanded:boolean,attention:MutableRefObject<Attention>) {
@@ -40,17 +67,20 @@ export function useLiquidLayout(stage:RefObject<HTMLElement|null>,identity:strin
     const nodes=Array.from(root.querySelectorAll<HTMLElement>(".live-glass"));
     const measure=()=>{
       base=root.getBoundingClientRect();width=base.width;height=base.height;
-      const transforms=nodes.map(node=>node.style.transform);
       nodes.forEach(node=>{node.style.transform="none";});
       const next=new Map<string,Pane>();
       nodes.forEach((node,index)=>{
         const id=node.dataset.paneId||"primary",old=panes.current.get(id);
         // The real multiplexer publishes a split as [source, daughter].
         const parent=index===0?undefined:old?.parent||nodes[index-1].dataset.paneId;
-        next.set(id,{id,node,parent,rest:localRect(node.getBoundingClientRect(),base),spring:old?.spring||{position:0,velocity:0}});
+        const rest=localRect(node.getBoundingClientRect(),base);
+        const slot=old?.slot||{rect:rest,velocity:{x:0,y:0,width:0,height:0}};
+        next.set(id,{id,node,parent,rest,slot,spring:old?.spring||{position:0,velocity:0}});
       });
-      nodes.forEach((node,index)=>{node.style.transform=transforms[index];});
       panes.current=next;dirty=false;settled=false;lastDialogPulse=-1;
+      // Compensate the new DOM grid before paint, including the parent surface.
+      const layout=presentLayout(Array.from(next.values()),width,height);
+      if(!expanded){glass.current.rects=layout.rects;links.current=layout.links;}
     };
     const hero=(now:number,dt:number)=>{
       const list=Array.from(panes.current.values()),primary=list[0];if(!primary)return;
@@ -60,23 +90,15 @@ export function useLiquidLayout(stage:RefObject<HTMLElement|null>,identity:strin
       engaged.current=awake;
       if(awake===previousEngaged&&settled)return;
       if(awake!==previousEngaged){glass.current.pulse=now;previousEngaged=awake;}
-      const rects=new Map<string,LiquidRect>([[primary.id,primary.rest]]);
-      const surfaces=[normalize(primary.rest,width,height)],beams:LightLink[]=[];
-      let complete=true;
-      list.slice(1).forEach((pane,index)=>{
-        const parent=rects.get(pane.parent||"")||primary.rest;
+      let complete=advanceSlot(primary,dt,reduced.matches);
+      list.slice(1).forEach(pane=>{
         const parentPane=panes.current.get(pane.parent||"");
         const readiness=parentPane===primary?1:easeBetween(.18,.72,parentPane?.spring.position??1);
         const target=awake?readiness:0;
-        pane.spring=reduced.matches?{position:target,velocity:0}:advanceSpring(pane.spring,target,dt);
-        if(Math.abs(pane.spring.position-target)>.0003||Math.abs(pane.spring.velocity)>.001)complete=false;
-        const p=Math.max(0,Math.min(1,pane.spring.position));
-        const rect=buddingRect(pane.rest,parent,p,index);
-        presentPane(pane,rect,p);rects.set(pane.id,rect);
-        if(p>.015)surfaces.push(normalize(rect,width,height));
-        if(p>.22)beams.push(connection(parent,rect,easeBetween(.22,.85,p)));
+        if(!advancePane(pane,target,dt,reduced.matches))complete=false;
       });
-      glass.current.rects=surfaces;links.current=beams;
+      const layout=presentLayout(list,width,height);
+      glass.current.rects=layout.rects;links.current=layout.links;
       settled=complete;
       root.dataset.liquidState=complete?(awake?"open":"folded"):(awake?"unfolding":"merging");
     };
