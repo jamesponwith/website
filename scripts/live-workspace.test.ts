@@ -1,11 +1,22 @@
 import { expect, test } from "bun:test";
 import { paneCrop, paneViewport, paneInsets, readLiveFrame } from "../src/components/prototype/vgpu/live/frames";
 import { canAutoGrow } from "../src/components/prototype/vgpu/live/automation";
-import { advanceRect, advanceSpring, buddingRect, distanceToRect, liquidNeck } from "../src/components/prototype/vgpu/live/living";
+import { advanceAttention, advanceRect, advanceSpring, buddingRect, distanceToRect, liquidNeck } from "../src/components/prototype/vgpu/live/living";
 import { LiveWorkspace } from "../src/components/prototype/vgpu/live/workspace";
 import type { MountOptions, PhuxController } from "../src/components/terminal/core";
 
 const frame = {cols:120,rows:24,panes:[{id:"@1",x:0,y:0,cols:59,rows:24,cursorRow:3},{id:"@2",x:60,y:0,cols:60,rows:24,cursorRow:23}]};
+test("brief boundary crossings do not spam unfold and merge transitions",()=>{
+  let gate={awake:false,candidate:false,since:0};
+  for(let time=0;time<600;time+=20){gate=advanceAttention(gate,time%40?70:105,true,time);expect(gate.awake).toBe(false);}
+  gate=advanceAttention(gate,70,true,700);gate=advanceAttention(gate,70,true,800);
+  expect(gate.awake).toBe(true);
+  for(let time=820;time<3000;time+=20){gate=advanceAttention(gate,time%40?140:70,true,time);expect(gate.awake).toBe(true);}
+  gate=advanceAttention(gate,200,false,3000);gate=advanceAttention(gate,70,true,3050);
+  expect(gate.awake).toBe(true);
+  gate=advanceAttention(gate,200,false,3100);gate=advanceAttention(gate,200,false,3400);
+  expect(gate.awake).toBe(false);
+});
 test("real published pane geometry preserves separators and independent resources",()=>{
   expect(readLiveFrame(frame)).toEqual(frame);
   expect(paneCrop(frame,frame.panes[1],1200,480,8)).toEqual({x:600,y:320,w:600,h:160});

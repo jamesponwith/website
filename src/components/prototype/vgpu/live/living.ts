@@ -1,6 +1,15 @@
 export type Spring = {position:number;velocity:number};
 export type LiquidRect = {x:number;y:number;width:number;height:number};
 export type RectSpring = {rect:LiquidRect;velocity:LiquidRect};
+export type AttentionGate = {awake:boolean;candidate:boolean;since:number};
+/** One deliberate transition: tiny edge crossings never replay the topology. */
+export function advanceAttention(state:AttentionGate,distance:number,active:boolean,now:number):AttentionGate {
+  const wanted=active&&distance<(state.awake?160:85);
+  if(wanted===state.awake)return {...state,candidate:wanted,since:now};
+  if(wanted!==state.candidate)return {...state,candidate:wanted,since:now};
+  if(now-state.since<(wanted?90:260))return state;
+  return {awake:wanted,candidate:wanted,since:now};
+}
 export const easeBetween = (lo:number,hi:number,value:number) => {
   const t=Math.max(0,Math.min(1,(value-lo)/(hi-lo)));
   return t*t*(3-2*t);

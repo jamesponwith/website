@@ -48,6 +48,7 @@
 .live-session-stage[data-phase=closed] .live-status-dot,.live-session-stage[data-phase=error] .live-status-dot{background:#83929e;box-shadow:none}
 
 .live-session-stage>.vibe-universe{inset:0}
+.live-session-stage>.vibe-universe .gpu-scene{pointer-events:none}
 .live-session-stage:has(.gpu-scene[data-renderer^="vgpu"]) .live-glass{backdrop-filter:none}
 .live-session-stage:has(.gpu-scene[data-renderer^="vgpu"]) .live-glass{background:transparent;box-shadow:none}
 .live-session-stage.has-terminal-open .live-session-layout{opacity:0;pointer-events:none}

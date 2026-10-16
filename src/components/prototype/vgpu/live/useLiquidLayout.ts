@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, type RefObject, type MutableRefObject } from "react";
-import { advanceRect, advanceSpring, buddingRect, distanceToRect, easeBetween, liquidNeck, type LiquidRect, type RectSpring, type Spring } from "./living";
+import { advanceAttention, advanceRect, advanceSpring, buddingRect, distanceToRect, easeBetween, liquidNeck, type AttentionGate, type LiquidRect, type RectSpring, type Spring } from "./living";
 
 export type Point = {x:number;y:number};
 export type LightLink = [Point,Point,Point,Point] & {strength?:number};
@@ -61,10 +61,11 @@ export function useLiquidLayout(stage:RefObject<HTMLElement|null>,identity:strin
   const glass=useRef<GlassLayout>({rects:[]}),links=useRef<LightLink[]>([]);
   const panes=useRef(new Map<string,Pane>());
   const engaged=useRef(false);
+  const gate=useRef<AttentionGate>({awake:false,candidate:false,since:0});
   const pulse=()=>{glass.current.pulse=performance.now();};
   useLayoutEffect(()=>{
     const root=stage.current;if(!root)return;
-    let base=root.getBoundingClientRect(),width=base.width,height=base.height,dirty=true,settled=false,visible=true,raf=0,last=performance.now(),previousEngaged=false,lastDialogPulse=-1;
+    let base=root.getBoundingClientRect(),width=base.width,height=base.height,dirty=true,settled=false,visible=true,raf=0,last=performance.now(),previousEngaged=gate.current.awake,lastDialogPulse=-1;
     const reduced=matchMedia("(prefers-reduced-motion: reduce)");
     const nodes=Array.from(root.querySelectorAll<HTMLElement>(".live-glass"));
     const measure=()=>{
@@ -87,11 +88,15 @@ export function useLiquidLayout(stage:RefObject<HTMLElement|null>,identity:strin
     const hero=(now:number,dt:number)=>{
       const list=Array.from(panes.current.values()),primary=list[0];if(!primary)return;
       const input=attention.current,x=(input.x+1)*width/2,y=(1-input.y)*height/2;
-      const near=list.some(p=>distanceToRect(x,y,p.rest)<95);
-      const awake=Boolean(input.active&&near);
+      const distance=Math.min(...list.map(p=>distanceToRect(x,y,p.rest)));
+      gate.current=advanceAttention(gate.current,distance,Boolean(input.active),now);
+      const awake=gate.current.awake;
       engaged.current=awake;
       if(awake===previousEngaged&&settled)return;
-      if(awake!==previousEngaged){glass.current.pulse=now;previousEngaged=awake;}
+      if(awake!==previousEngaged){
+        glass.current.pulse=now;previousEngaged=awake;
+        root.dataset.liquidTransitions=String(Number(root.dataset.liquidTransitions||0)+1);
+      }
       let complete=advanceSlot(primary,dt,reduced.matches);
       list.slice(1).forEach(pane=>{
         const parentPane=panes.current.get(pane.parent||"");
