@@ -165,6 +165,7 @@ function PairPanel({ wsUrl, pair }: { wsUrl: string; pair: SessionPair }) {
 
 export default function HeroDemo({ wsUrl = "" }: { wsUrl?: string }) {
   const [open, setOpen] = useState(false);
+  const [active,setActive]=useState(()=>typeof document==="undefined"||document.documentElement.dataset.homeHero!=="light");
   const [mode, setMode] = useState<Mode>("demo");
   const [Terminal, setTerminal] = useState<typeof PhuxTerminal | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -209,6 +210,7 @@ export default function HeroDemo({ wsUrl = "" }: { wsUrl?: string }) {
   // JavaScript it falls through to the standalone shell at its href.
   useEffect(() => {
     function onClick(event: MouseEvent) {
+      if(document.documentElement.dataset.homeHero==="light")return;
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const target = event.target instanceof Element ? event.target : null;
@@ -219,6 +221,17 @@ export default function HeroDemo({ wsUrl = "" }: { wsUrl?: string }) {
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, []);
+
+  useEffect(()=>{
+    const changed=()=>{
+      const visible=document.documentElement.dataset.homeHero!=="light";
+      setActive(visible);
+      if(!visible)setOpen(false);
+    };
+    document.addEventListener("phux:hero-view",changed);
+    changed();
+    return()=>document.removeEventListener("phux:hero-view",changed);
+  },[]);
 
   useEffect(() => {
     const result = document.documentElement.dataset.nativeAuthResult;
@@ -252,7 +265,7 @@ export default function HeroDemo({ wsUrl = "" }: { wsUrl?: string }) {
 
   return (
     <div className="hero-demo">
-      <Tour prepare={loadTerminal} suspended={open} />
+      <Tour prepare={loadTerminal} suspended={open||!active} />
       <noscript>
         <p>
           <a href="/embed">Open the hosted shell</a> or{" "}

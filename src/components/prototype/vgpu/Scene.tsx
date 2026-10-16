@@ -106,15 +106,17 @@ export function Scene({ variant, settings, detached = false, miniature = false, 
       pointer.active = 1;
     };
     const leave = () => { pointer.active = 0; };
-    element.addEventListener("pointermove", move);
-    element.addEventListener("pointerleave", leave);
+    if (!input) {
+      element.addEventListener("pointermove", move);
+      element.addEventListener("pointerleave", leave);
+    }
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const showCanvas = (label: string) => {
       if (disposed) return;
       fallbackStop();
       element.style.opacity = "0";
       setRenderer(label);
-      fallbackStop = drawFallback(fallback.current!, variant, settings, detachedRef, pointer, reduced, miniature, () => onScreen && activeRef.current, () => { if (!disposed) setReady(true); });
+      fallbackStop = drawFallback(fallback.current!, variant, settings, detachedRef, pointer, reduced, miniature, () => onScreen && activeRef.current, () => { if (!disposed) setReady(true); }, Boolean(glass));
     };
     const useFallback = (error: unknown) => {
       if (disposed || fallbackStarted) return;
@@ -185,7 +187,8 @@ export function Scene({ variant, settings, detached = false, miniature = false, 
         // not render or replay the impulse when they return after it settles.
         const energy = responding ? ease(Math.min(age/70,1))*ease(1-age/1500) : 0;
         const pulseAge = responding ? age/1000 : 0;
-        data.glassMeta = [rects.length,energy,pulseAge,0];
+        data.glassMeta = [rects.length,energy,pulseAge,glass ? 1 : 0];
+        element.dataset.opticalWorld = glass ? "liquid" : "archive";
         element.dataset.glassEnergy = energy.toFixed(3);
         const key = rects.map(rect => rect.map(value => value.toFixed(5)).join(",")).join(";");
         if (element.dataset.glassLayout !== key) {
@@ -274,8 +277,10 @@ export function Scene({ variant, settings, detached = false, miniature = false, 
       disposed = true; cancelWarmup();
       visibility.disconnect(); resize.disconnect();
       cleanupGpu(); fallbackStop();
-      element.removeEventListener("pointermove", move);
-      element.removeEventListener("pointerleave", leave);
+      if (!input) {
+        element.removeEventListener("pointermove", move);
+        element.removeEventListener("pointerleave", leave);
+      }
     };
   }, [variant, miniature, ambient, settings, input, glass]);
   return <div className="gpu-scene" data-renderer={renderer} data-ready={ready}>
@@ -285,7 +290,28 @@ export function Scene({ variant, settings, detached = false, miniature = false, 
   </div>;
 }
 
-function paintGlass(ctx: CanvasRenderingContext2D, width: number, height: number, m: Motion, variant: number) {
+function paintLivingGlass(ctx: CanvasRenderingContext2D, width: number, height: number, m: Motion) {
+  const background=ctx.createLinearGradient(0,0,width,height);
+  background.addColorStop(0,"#05080d");background.addColorStop(.54,"#101923");background.addColorStop(1,"#070b12");
+  ctx.fillStyle=background;ctx.fillRect(0,0,width,height);
+  ctx.save();ctx.translate(width*.61+m.pointer.x*8,height*.48-m.pointer.y*6);ctx.rotate(-.36+m.to*.027);
+  const phase=m.time*.045+m.to*.18;
+  const path=new Path2D();
+  for(let step=0;step<=50;step++){
+    const x=(step/50-.5)*width*2,y=(Math.sin(x/height*2.16+phase)*(.24+m.amplitude*.035)+.075*Math.sin(x/height*3.42-m.time*.028))*height*.5;
+    if(step===0)path.moveTo(x,y);else path.lineTo(x,y);
+  }
+  const reflection=ctx.createLinearGradient(-width,0,width,0);
+  reflection.addColorStop(0,"rgba(120,150,176,0)");reflection.addColorStop(.45,"rgba(143,169,193,.25)");reflection.addColorStop(.7,"rgba(171,188,204,.34)");reflection.addColorStop(1,"rgba(120,150,176,0)");
+  ctx.lineCap="round";ctx.strokeStyle=reflection;
+  for(const [thickness,alpha] of [[.24,.14],[.16,.18],[.09,.25],[.035,.30]]){
+    ctx.globalAlpha=alpha;ctx.lineWidth=height*thickness;ctx.stroke(path);
+  }
+  ctx.globalAlpha=.24;ctx.translate(0,height*.25);ctx.lineWidth=height*.10;ctx.strokeStyle="rgba(129,156,182,.23)";ctx.stroke(path);
+  ctx.restore();
+}
+function paintGlass(ctx: CanvasRenderingContext2D, width: number, height: number, m: Motion, variant: number, liveMaterial = false) {
+  if(liveMaterial){paintLivingGlass(ctx,width,height,m);return;}
   const scale = height * .5, centerX = width * .66 + m.pointer.x * 12, centerY = height * .5 - m.pointer.y * 9;
   const rgb = m.color.map(c => Math.round(c * 255)).join(",");
   ctx.fillStyle = "#020305"; ctx.fillRect(0,0,width,height);
@@ -317,9 +343,10 @@ function paintGlass(ctx: CanvasRenderingContext2D, width: number, height: number
   }
   ctx.restore();
 }
-function drawFallback(canvas: HTMLCanvasElement, variant: number, settings: MutableRefObject<SceneSettings>, detached: MutableRefObject<boolean>, pointer: Pointer, reduced: MediaQueryList, miniature: boolean, isVisible: () => boolean, onReady: () => void) {
+function drawFallback(canvas: HTMLCanvasElement, variant: number, settings: MutableRefObject<SceneSettings>, detached: MutableRefObject<boolean>, pointer: Pointer, reduced: MediaQueryList, miniature: boolean, isVisible: () => boolean, onReady: () => void, liveMaterial = false) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return () => {};
+  canvas.dataset.opticalWorld = liveMaterial ? "liquid" : "archive";
   let raf = 0, firstFrame = true, lastPaint = 0;
   const motion = createMotion(settings.current);
   const drawFrame = (now: number) => {
@@ -331,7 +358,7 @@ function drawFallback(canvas: HTMLCanvasElement, variant: number, settings: Muta
     if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
     const current=motion(settings.current,detached.current,pointer,reduced.matches,now);
     canvas.dataset.shape=String(current.to);canvas.dataset.morph=current.progress.toFixed(3);
-    ctx.setTransform(dpr,0,0,dpr,0,0);paintGlass(ctx,box.width,box.height,current,variant);
+    ctx.setTransform(dpr,0,0,dpr,0,0);paintGlass(ctx,box.width,box.height,current,variant,liveMaterial);
     if(firstFrame){firstFrame=false;onReady();}
   };
   raf=requestAnimationFrame(drawFrame);

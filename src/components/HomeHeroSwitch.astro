@@ -1,67 +1,62 @@
-<div class="hero-view-bar">
-  <button type="button" role="switch" aria-checked="false" aria-controls="home-light" data-hero-toggle hidden>
-    <span aria-hidden="true">◌</span> Light lab <i aria-hidden="true"></i>
-  </button>
-  <a href="/concepts/vgpu">Concepts ↗</a>
-</div>
 <slot />
-<section id="home-light" class="home-light" aria-label="PHUX Light lab" hidden></section>
+<section id="home-light" class="home-light" aria-label="PHUX live workspace"></section>
+<nav class="hero-view-options" aria-label="Homepage view">
+  <button type="button" aria-controls="home-light" data-hero-toggle hidden>Classic view</button>
+</nav>
+<noscript>
+  <style>[data-classic-home]{display:block!important}.home-light,.hero-view-options{display:none!important}</style>
+</noscript>
 
 <script>
-  const toggle = document.querySelector<HTMLButtonElement>("[data-hero-toggle]");
-  const classic = document.querySelector<HTMLElement>("[data-classic-home]");
-  const light = document.getElementById("home-light");
-  if (toggle && classic && light) {
-    let frame: HTMLIFrameElement | null = null;
-    const show = (enabled: boolean) => {
-      toggle.setAttribute("aria-checked", String(enabled));
-      classic.hidden = enabled;
-      light.hidden = !enabled;
-      if (enabled && !frame) {
-        frame = document.createElement("iframe");
-        frame.title = "PHUX Light lab — interactive homepage";
-        frame.src = "/concepts/vgpu?variant=combo&embedded=home";
+  import { homeHero, heroSearch, type HomeHero } from "../lib/home-hero";
+  const toggle=document.querySelector<HTMLButtonElement>("[data-hero-toggle]");
+  const classic=document.querySelector<HTMLElement>("[data-classic-home]");
+  const light=document.getElementById("home-light");
+  if(toggle&&classic&&light){
+    let frame:HTMLIFrameElement|null=null;
+    const show=(hero:HomeHero)=>{
+      const enabled=hero==="light";
+      document.documentElement.dataset.homeHero=hero;
+      classic.hidden=enabled;light.hidden=!enabled;
+      toggle.textContent=enabled?"Classic view":"Live workspace";
+      // The classic dialog and tour release before another client is admitted.
+      document.dispatchEvent(new CustomEvent("phux:hero-view",{detail:hero}));
+      if(enabled&&!frame){
+        frame=document.createElement("iframe");
+        frame.title="PHUX live workspace — interactive homepage";
+        frame.src="/concepts/vgpu?variant=combo&embedded=home";
         light.append(frame);
-      } else if (!enabled && frame) {
-        // Removing the document releases its worker, GPU and VT handles.
-        frame.remove();
-        frame = null;
-        light.style.removeProperty("height");
+      }else if(!enabled&&frame){
+        frame.remove();frame=null;light.style.removeProperty("height");
       }
     };
-    toggle.hidden = false;
-    show(new URL(location.href).searchParams.get("hero") === "light");
-    toggle.addEventListener("click", () => {
-      const enabled = toggle.getAttribute("aria-checked") !== "true";
-      show(enabled);
-      const url = new URL(location.href);
-      if (enabled) url.searchParams.set("hero", "light");
-      else url.searchParams.delete("hero");
-      history.replaceState(history.state, "", url);
+    toggle.hidden=false;
+    show(homeHero(location.search,document.documentElement.dataset.nativeAuthResult,document.documentElement.dataset.homeHero));
+    toggle.addEventListener("click",()=>{
+      const hero=document.documentElement.dataset.homeHero==="light"?"classic":"light";
+      show(hero);
+      const url=new URL(location.href);url.search=heroSearch(url.search,hero);
+      history.replaceState(history.state,"",url);
     });
-    window.addEventListener("popstate", () => show(new URL(location.href).searchParams.get("hero") === "light"));
-    window.addEventListener("resize", () => frame?.contentWindow?.postMessage({ type:"phux:hero-viewport" }, location.origin));
-    window.addEventListener("message", event => {
-      if (!frame || event.origin !== location.origin || event.source !== frame.contentWindow) return;
-      if (event.data?.type !== "phux:hero-height" || !Number.isFinite(event.data.height)) return;
-      light.style.height = `${Math.max(620, Math.min(2400, event.data.height))}px`;
+    window.addEventListener("popstate",()=>show(homeHero(location.search,document.documentElement.dataset.nativeAuthResult)));
+    window.addEventListener("resize",()=>frame?.contentWindow?.postMessage({type:"phux:hero-viewport"},location.origin));
+    window.addEventListener("message",event=>{
+      if(!frame||event.origin!==location.origin||event.source!==frame.contentWindow)return;
+      if(event.data?.type!=="phux:hero-height"||!Number.isFinite(event.data.height))return;
+      light.style.height=`${Math.max(620,Math.min(2400,event.data.height))}px`;
     });
   }
 </script>
 
+<style is:global>
+  html[data-home-hero="light"] [data-classic-home]{display:none}
+</style>
 <style>
-  .hero-view-bar { width:min(calc(100% - 48px),1072px); margin:0 auto; min-height:44px; display:flex; align-items:center; justify-content:flex-end; gap:24px; font-size:11px; color:var(--color-dim); }
-  .hero-view-bar a { display:inline-flex; align-items:center; min-height:44px; }
-  .hero-view-bar button { display:inline-flex; align-items:center; gap:9px; min-height:44px; padding:0; border:0; background:none; color:inherit; font:inherit; cursor:pointer; }
-  .hero-view-bar button[hidden] { display:none; }
-  .hero-view-bar button>span { font-size:18px; }
-  .hero-view-bar i { position:relative; width:24px; height:14px; border:1px solid var(--color-rule); border-radius:20px; }
-  .hero-view-bar i:after { content:''; position:absolute; top:3px; left:3px; width:6px; height:6px; border-radius:50%; background:currentColor; transition:transform .2s; }
-  .hero-view-bar [aria-checked=true] { color:var(--color-fg); }
-  .hero-view-bar [aria-checked=true] i:after { transform:translateX(10px); }
-  .hero-view-bar button:hover,.hero-view-bar a:hover { color:var(--color-fg); }
-  .hero-view-bar button:focus-visible { outline:2px solid var(--color-fg); outline-offset:4px; border-radius:3px; }
-  .home-light { position:relative; height:max(700px,calc(100svh - 152px)); background:#050609; }
-  .home-light :global(iframe) { display:block; width:100%; height:100%; border:0; }
-  @media(prefers-reduced-motion:reduce) { .hero-view-bar i:after { transition:none; } }
+  .home-light{position:relative;height:max(700px,calc(100svh - 108px));background:#080e14}
+  .home-light :global(iframe){display:block;width:100%;height:100%;border:0}
+  .hero-view-options{width:min(calc(100% - 48px),1072px);margin:0 auto;min-height:44px;display:flex;justify-content:flex-end;align-items:center;color:#7e8b94;font-size:10px}
+  .hero-view-options button{min-height:44px;padding:0 6px;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+  .hero-view-options button[hidden]{display:none}
+  .hero-view-options button:hover{color:#d3e2e8}
+  .hero-view-options button:focus-visible{outline:2px solid #c2dce7;outline-offset:2px;border-radius:8px}
 </style>
