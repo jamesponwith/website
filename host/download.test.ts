@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { desktopArchiveUrl, desktopDownload, resetDesktopDownload, type Fetch } from "./download";
+import { desktopArchiveUrl, desktopDownload, resetDesktopDownload, runeDownload, type Fetch } from "./download";
 import handler from "./index";
 
 const RELEASES = "https://github.com/no-phux/phux/releases";
@@ -195,5 +195,53 @@ describe("GET /download/desktop", () => {
       throw new Error("unreachable");
     });
     expect(await location(fetchImpl)).toBe(ZIP);
+  });
+});
+
+describe("GET /download/rune", () => {
+  const FEED = `${RELEASES}/download/channels/rune.json`;
+  const RUNE = `${RELEASES}/download/rune-v0.1.0-alpha.8/phux-rune-0.1.0-alpha.8-macos-arm64.zip`;
+  const feed = (version: unknown): Fetch => async () => Response.json({ schema: 1, version });
+  const rune = async (fetchImpl: Fetch, now = 0) =>
+    (await runeDownload(fetchImpl, now)).headers.get("location");
+
+  beforeEach(resetDesktopDownload);
+  afterEach(() => mock.restore());
+
+  test("redirects to the feed's macOS archive", async () => {
+    const fetchImpl = mock<Fetch>(feed("0.1.0-alpha.8"));
+    const response = await runeDownload(fetchImpl, 0);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(RUNE);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(fetchImpl.mock.calls[0]![0]).toBe(FEED);
+  });
+
+  test("a final version has no suffix", async () => {
+    expect(await rune(feed("0.1.0"))).toBe(`${RELEASES}/download/rune-v0.1.0/phux-rune-0.1.0-macos-arm64.zip`);
+  });
+
+  test.each([["1.0"], ["0.1.0-beta.1"], ["../evil"], [7], [null]])("rejects version %p", async (version) => {
+    expect(await rune(feed(version))).toBe(RELEASES);
+  });
+
+  test("keeps the last good download when the feed fails", async () => {
+    await rune(feed("0.1.0-alpha.8"));
+    expect(await rune(offline, FRESH_MS + 1)).toBe(RUNE);
+    expect(await rune(status(503), FRESH_MS + 2)).toBe(RUNE);
+  });
+
+  test("falls back to the releases page with nothing remembered", async () => {
+    expect(await rune(offline)).toBe(RELEASES);
+  });
+
+  test("the host endpoint serves it", async () => {
+    spyOn(globalThis, "fetch").mockResolvedValueOnce(Response.json({ version: "0.1.0-alpha.8" }));
+    const asset = mock(async () => new Response("not the download", { status: 404 }));
+    const response = await handler.fetch(new Request("https://phux.sh/download/rune"), {
+      ASSETS: { fetch: asset },
+    });
+    expect(response.headers.get("location")).toBe(RUNE);
+    expect(asset).not.toHaveBeenCalled();
   });
 });

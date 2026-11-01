@@ -13,7 +13,11 @@ const RELEASES = "https://github.com/no-phux/phux/releases";
 const MANIFEST = `${RELEASES}/download/channels/stable.json`;
 const FRESH_MS = 5 * 60_000;
 
+const RUNE_FEED = `${RELEASES}/download/channels/rune.json`;
+const RUNE_VERSION = /^\d+\.\d+\.\d+(-alpha\.\d+)?$/;
+
 let cached: { url: string; at: number } | null = null;
+let cachedRune: { url: string; at: number } | null = null;
 
 export function desktopArchiveUrl(version: string, format: "zip" | "dmg" = "zip"): string {
   return `${RELEASES}/download/desktop-v${version}/phux-desktop-${version}-macos-arm64.${format}`;
@@ -76,4 +80,38 @@ async function preferredDesktopArchive(version: string, fetchImpl: Fetch, signal
 /** Tests only: forget the remembered download. */
 export function resetDesktopDownload(): void {
   cached = null;
+  cachedRune = null;
+}
+
+/**
+ * GET /download/rune — the Apple-silicon Phux Rune archive. Rune has its own
+ * feed and ships ZIPs only, and its versions may carry an alpha suffix.
+ */
+export async function runeDownload(
+  fetchImpl: Fetch = (input, init) => fetch(input, init),
+  now = Date.now(),
+): Promise<Response> {
+  const url = await runeUrl(fetchImpl, now);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      location: url ?? RELEASES,
+      "cache-control": "no-store",
+    },
+  });
+}
+
+async function runeUrl(fetchImpl: Fetch, now: number): Promise<string | null> {
+  if (cachedRune && now - cachedRune.at < FRESH_MS) return cachedRune.url;
+  try {
+    const response = await fetchImpl(RUNE_FEED, { signal: AbortSignal.timeout(5_000) });
+    if (!response.ok) return cachedRune?.url ?? null;
+    const { version } = (await response.json()) as { version?: unknown };
+    if (typeof version !== "string" || !RUNE_VERSION.test(version)) return cachedRune?.url ?? null;
+    const url = `${RELEASES}/download/rune-v${version}/phux-rune-${version}-macos-arm64.zip`;
+    cachedRune = { url, at: now };
+    return url;
+  } catch {
+    return cachedRune?.url ?? null;
+  }
 }

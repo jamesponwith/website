@@ -118,6 +118,15 @@ export default {
       return response;
     }
 
+    // The Phux Rune archive for Apple-silicon Macs, resolved per click.
+    if (url.pathname === "/download/rune") {
+      const { runeDownload } = await import("./download");
+      const response = await runeDownload();
+      recordEvents(env.TELEMETRY, ctx, classifyRequest(request, response));
+      observe(env, ctx, request, response);
+      return response;
+    }
+
     // The newest TestFlight builds, for phux-mobile's update prompt
     // (host/app-release.ts).
     if (url.pathname === APP_RELEASE_PATH) {
