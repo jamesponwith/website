@@ -1,8 +1,13 @@
 import { gazeBlend, gazeOffset } from "./gaze";
 
-export function trackFox(svg: SVGSVGElement) {
-  const lean = svg.querySelector<SVGGElement>("[data-fox-look]")!;
-  const turn = svg.querySelector<SVGGElement>("[data-fox-turn]")!;
+/** Where the fox's head sits in its frame at rest, as fractions of the box. */
+const HEAD = { x: 0.62, y: 0.38 };
+
+/**
+ * Follow the pointer with an eased gaze and hand it to `onLook` as -1..1.
+ * The latest value is mirrored in `data-look` for checks.
+ */
+export function trackFox(el: HTMLElement, onLook: (x: number, y: number) => void = () => {}) {
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   let visible = false;
   let frame = 0;
@@ -11,9 +16,9 @@ export function trackFox(svg: SVGSVGElement) {
   let target = { x: 0, y: 0 };
 
   function paint() {
-    // The emblem leans toward the pointer: a small shift plus a turn.
-    lean.setAttribute("transform", `translate(${current.x * 4} ${current.y * 4})`);
-    turn.setAttribute("transform", `rotate(${current.x * 1.8} 310 210)`);
+    const x = current.x / 3.2, y = current.y / 2.2;
+    el.dataset.look = `${+x.toFixed(4)} ${+y.toFixed(4)}`;
+    onLook(x, y);
   }
 
   function settle() {
@@ -44,10 +49,11 @@ export function trackFox(svg: SVGSVGElement) {
 
   function follow(event: PointerEvent) {
     if (!visible || motion.matches || event.pointerType === "touch") return;
-    const matrix = svg.getScreenCTM();
-    if (!matrix) return;
-    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
-    look(gazeOffset(point.x - 310, point.y - 210));
+    const box = el.getBoundingClientRect();
+    if (!box.width) return;
+    // Measured in the old 620-wide frame so gazeOffset keeps its feel.
+    const unit = 620 / box.width;
+    look(gazeOffset((event.clientX - box.left - HEAD.x * box.width) * unit, (event.clientY - box.top - HEAD.y * box.height) * unit));
   }
 
   const observer = new IntersectionObserver(([entry]) => {
@@ -55,7 +61,7 @@ export function trackFox(svg: SVGSVGElement) {
     if (!visible) settle();
   });
   paint();
-  observer.observe(svg);
+  observer.observe(el);
   window.addEventListener("pointermove", follow, { passive: true });
   document.documentElement.addEventListener("pointerleave", () => look({ x: 0, y: 0 }));
   document.addEventListener("visibilitychange", settle);
