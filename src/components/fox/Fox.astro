@@ -1,67 +1,26 @@
 ---
-// A site illustration, not a replacement for the pinned product identity assets.
+// The approved Emblem Fox (phux-brand library/approved/emblem/source.png,
+// levelled 5%-22% and trimmed like tools/render-playground.sh), animated in
+// CSS the way the playground's celebrate and idle loops move it.
 ---
 <div class="fox-stage">
-  <svg data-fox viewBox="0 0 620 480" fill="none" role="img" aria-label="A lean, silver fox standing alert">
-    <title>A lean, silver fox standing alert</title>
+  <svg data-fox viewBox="0 0 620 480" fill="none" role="img" aria-label="The phux silver fox">
+    <title>The phux silver fox</title>
     <defs>
-      <linearGradient id="fox-body" x1="300" y1="205" x2="340" y2="335" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#f1f0e8" /><stop offset=".3" stop-color="#bfc4c0" /><stop offset=".7" stop-color="#717c7c" /><stop offset="1" stop-color="#3b474a" />
+      <linearGradient id="fox-sheen" x1="0" y1="0" x2="1" y2="0">
+        <stop stop-color="#fff" stop-opacity="0" /><stop offset=".5" stop-color="#fff" stop-opacity=".55" /><stop offset="1" stop-color="#fff" stop-opacity="0" />
       </linearGradient>
-      <linearGradient id="fox-tail" x1="97" y1="232" x2="254" y2="340" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#e9e9e0" /><stop offset=".4" stop-color="#a7b1ac" /><stop offset=".75" stop-color="#657476" /><stop offset="1" stop-color="#354448" />
-      </linearGradient>
-      <linearGradient id="fox-leg" x1="390" y1="272" x2="427" y2="410" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#c0c9c3" /><stop offset=".55" stop-color="#7c8b87" /><stop offset="1" stop-color="#323f42" />
-      </linearGradient>
-      <linearGradient id="fox-face" x1="393" y1="100" x2="464" y2="218" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#f5f1e7" /><stop offset=".4" stop-color="#d2d5ca" /><stop offset=".7" stop-color="#97a5a0" /><stop offset="1" stop-color="#465a5a" />
-      </linearGradient>
-      <linearGradient id="fox-cheek" x1="402" y1="173" x2="441" y2="217" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#fbf8ec" /><stop offset="1" stop-color="#a4b2a9" />
-      </linearGradient>
-      <linearGradient id="fox-ear" x1="391" y1="76" x2="418" y2="144" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#b9a38c" /><stop offset="1" stop-color="#414f4e" />
-      </linearGradient>
-      <radialGradient id="fox-ground"><stop stop-color="#a9c3b2" stop-opacity=".14" /><stop offset="1" stop-color="#a9c3b2" stop-opacity="0" /></radialGradient>
-      <clipPath id="fox-eye-left"><path d="M397 158 Q408 152 419 160 Q409 169 397 158Z" /></clipPath>
-      <clipPath id="fox-eye-right"><path d="M443 160 Q454 151 465 156 Q455 168 443 160Z" /></clipPath>
+      <radialGradient id="fox-ground"><stop stop-color="#020809" stop-opacity=".7" /><stop offset="1" stop-color="#020809" stop-opacity="0" /></radialGradient>
+      <mask id="fox-mask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="620" height="480">
+        <image href="/fox/emblem.webp" x="131" y="52" width="358" height="362" />
+      </mask>
     </defs>
-    <ellipse cx="321" cy="419" rx="225" ry="34" fill="url(#fox-ground)" />
-    <ellipse cx="339" cy="414" rx="137" ry="6" fill="#020809" opacity=".45" />
-    <!-- Far legs: a readable gap beneath the tucked abdomen, not a solid blob. -->
-    <path d="M282 271 Q306 295 291 328 L276 361 L289 402 Q302 404 305 411 L278 411 Q270 407 267 393 L254 355 L268 311Z" fill="#465759" />
-    <path d="M416 245 Q433 258 427 296 L439 397 Q452 399 454 407 L427 407 Q420 403 420 391 L401 287Z" fill="#556565" />
-    <!-- One long, tapered sweep, carried low behind the runner's hips. -->
-    <path d="M268 281 C226 273 204 303 177 306 C131 309 98 271 74 219 C78 279 101 329 151 349 C199 368 247 335 270 308Z" fill="url(#fox-tail)" />
-    <path d="M74 219 C82 270 105 308 137 323 Q128 294 134 285 C107 274 88 246 74 219Z" fill="#e1e5dc" />
-    <path d="M94 282 Q142 352 205 331" stroke="#d8e4d8" stroke-opacity=".3" stroke-width="1.2" />
-    <!-- High shoulders, a narrow waist and a strong, compact rear quarter. -->
-    <path d="M242 253 C270 226 307 235 339 238 C372 242 382 215 402 201 C424 198 444 226 438 252 C435 275 417 293 393 300 C367 307 351 286 326 286 C304 286 291 309 270 310 C245 308 229 282 242 253Z" fill="url(#fox-body)" />
-    <path d="M249 250 C288 232 316 245 344 246 Q381 248 402 211" stroke="#f6f7e9" stroke-opacity=".65" stroke-width="1.3" />
-    <path d="M400 226 C382 253 389 282 402 296 Q414 282 420 260Z" fill="#dee4d8" />
-    <path d="M265 258 C291 259 299 284 282 308 L254 350 L255 398 Q272 398 275 409 L244 409 Q238 406 239 394 L235 348 L253 301 Q235 281 246 266Z" fill="url(#fox-body)" />
-    <path d="M405 266 Q419 269 416 296 L405 399 Q422 399 425 410 L394 410 Q387 407 390 394 L388 302 Q380 277 393 265Z" fill="url(#fox-leg)" />
-    <path d="M399 305 L397 391" stroke="#e1e8dc" stroke-opacity=".4" stroke-width="1.1" />
-    <path d="M259 318 L246 351 L248 392" stroke="#e1e8dc" stroke-opacity=".3" stroke-width="1.1" />
-    <g data-fox-head>
-      <!-- Long ears and cut cheek planes keep the face alert and unmistakably vulpine. -->
-      <path d="M388 143 Q378 112 387 63 Q414 82 429 125 L445 125 Q468 87 493 76 Q490 120 472 147 L480 171 L457 191 L435 221 L408 207 L382 174Z" fill="url(#fox-face)" />
-      <path d="M390 77 Q388 108 398 133 L417 128 Q407 96 390 77Z" fill="url(#fox-ear)" />
-      <path d="M484 89 Q464 106 453 132 L468 136 Q480 114 484 89Z" fill="#566563" />
-      <path d="M391 73 Q383 111 393 135" stroke="#fcf7e9" stroke-opacity=".75" stroke-width="1.1" />
-      <path d="M431 131 L422 168 L435 194 L447 168Z" fill="#b7c5bb" />
-      <path d="M382 174 L399 169 L422 179 L435 200 L410 198Z" fill="url(#fox-cheek)" />
-      <path d="M480 171 L460 170 L445 181 L435 200 L458 190Z" fill="#dde3d6" />
-      <path d="M397 158 Q408 152 419 160 Q409 169 397 158Z" fill="#d3dcc6" />
-      <path d="M443 160 Q454 151 465 156 Q455 168 443 160Z" fill="#d3dcc6" />
-      <g clip-path="url(#fox-eye-left)"><g data-fox-eye><ellipse cx="409" cy="160" rx="4" ry="5.5" fill="#243c36" /><ellipse cx="409" cy="160" rx="1.8" ry="4.5" fill="#081714" /><circle cx="410" cy="157.7" r="1.1" fill="#fffced" /></g></g>
-      <g clip-path="url(#fox-eye-right)"><g data-fox-eye><ellipse cx="453" cy="158.5" rx="4" ry="5.5" fill="#243c36" /><ellipse cx="453" cy="158.5" rx="1.8" ry="4.5" fill="#081714" /><circle cx="454" cy="156.2" r="1.1" fill="#fffced" /></g></g>
-      <path d="M395 156 Q407 151 420 159 M442 159 Q454 150 467 154" stroke="#435651" stroke-width="2.6" stroke-linecap="round" />
-      <path d="M420 185 Q433 181 446 185 L436 196 Q432 199 428 194Z" fill="#263b39" />
-      <path d="M424 185 Q432 183 439 185" stroke="#91a79c" stroke-width="1" />
-      <path d="M434 197 L434 202 L424 204 M434 202 L444 201" stroke="#536b60" stroke-width="1.2" stroke-linecap="round" />
-    </g>
+    <ellipse class="fox-shadow" cx="310" cy="452" rx="140" ry="13" fill="url(#fox-ground)" />
+    <g class="fox-arrive"><g class="fox-idle"><g data-fox-look><g data-fox-turn>
+      <image href="/fox/emblem.webp" x="131" y="52" width="358" height="362" />
+      <!-- One band of light crosses the metal as it lands, then now and then. -->
+      <g mask="url(#fox-mask)"><rect class="fox-sheen" x="-60" y="0" width="160" height="480" fill="url(#fox-sheen)" /></g>
+    </g></g></g></g>
   </svg>
 </div>
 <script>
@@ -72,4 +31,38 @@
   .fox-stage { position: relative; width: 100%; isolation: isolate; }
   .fox-stage::before { content: ""; position: absolute; z-index: -1; inset: 8% -8% 0; border-radius: 50%; background: radial-gradient(ellipse, var(--fox-halo), transparent 66%); }
   svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .fox-arrive, .fox-shadow, .fox-idle { transform-box: view-box; transform-origin: 310px 414px; }
+  .fox-sheen { opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    svg { --spring: linear(0, .22 7%, .66 17%, .98 28%, 1.06 36%, 1.05 44%, 1.01 54%, .995 66%, 1); }
+    svg { animation: fox-focus .6s ease-out both; }
+    .fox-arrive { animation: fox-arrive 1.25s both; }
+    .fox-shadow { animation: fox-shadow 1.25s both, fox-shadow-idle 3.6s ease-in-out 1.25s infinite; }
+    .fox-idle { animation: fox-idle 3.6s ease-in-out 1.25s infinite; }
+    .fox-sheen { animation: fox-sheen 9s cubic-bezier(.45, 0, .25, 1) .95s infinite; }
+  }
+  @keyframes fox-focus { from { opacity: 0; filter: blur(8px); } to { opacity: 1; filter: blur(0); } }
+  /* Rise into a crouch, one hop with a twist, squash on landing, spring to rest. */
+  @keyframes fox-arrive {
+    0% { transform: translateY(26px) rotate(0) scale(.9, .9); animation-timing-function: cubic-bezier(.3, 0, .5, 1); }
+    20% { transform: translateY(8px) rotate(0) scale(1.05, .9); animation-timing-function: cubic-bezier(.15, .7, .35, 1); }
+    44% { transform: translateY(-36px) rotate(-5deg) scale(.96, 1.06); animation-timing-function: cubic-bezier(.6, 0, .85, .45); }
+    64% { transform: translateY(0) rotate(2deg) scale(1.07, .92); animation-timing-function: var(--spring); }
+    100% { transform: translateY(0) rotate(0) scale(1, 1); }
+  }
+  @keyframes fox-shadow {
+    0% { opacity: 0; transform: scale(.8); }
+    20% { opacity: 1; transform: scale(1.04); animation-timing-function: cubic-bezier(.15, .7, .35, 1); }
+    44% { opacity: .45; transform: scale(.7); animation-timing-function: cubic-bezier(.6, 0, .85, .45); }
+    64% { opacity: 1; transform: scale(1.08); animation-timing-function: var(--spring); }
+    100% { opacity: 1; transform: none; }
+  }
+  /* Idle: a slow hover and breath, the shadow answering the height. */
+  @keyframes fox-idle { 50% { transform: translateY(-8px) scale(1.012, 1.018); } }
+  @keyframes fox-shadow-idle { 50% { opacity: .75; transform: scale(.93); } }
+  @keyframes fox-sheen {
+    0% { opacity: 1; transform: translateX(80px) skewX(-18deg); }
+    14% { opacity: 1; transform: translateX(560px) skewX(-18deg); }
+    14.1%, 100% { opacity: 0; transform: translateX(560px) skewX(-18deg); }
+  }
 </style>
