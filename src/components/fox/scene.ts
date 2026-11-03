@@ -24,6 +24,42 @@ export const SETTLED = 3.6;
 const START = new Vector3(-70, 0, -260);
 const END = new Vector3(0, 0, 0);
 
+/**
+ * Texture pixels the head and neck bones drive, so plate seams skip the face:
+ * its texture pieces do not line up with the body's, and seams drawn across
+ * them land out of place.
+ */
+function headMask(mesh: SkinnedMesh, W: number, H: number) {
+  const names = new Set(["b_Head_05", "b_Neck_04"]);
+  const heads = new Set(mesh.skeleton.bones.flatMap((b, i) => (names.has(b.name) ? [i] : [])));
+  const { uv, skinIndex, skinWeight } = mesh.geometry.attributes;
+  const index = mesh.geometry.index;
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#fff";
+  const onHead = (v: number) => {
+    let best = 0, bone = -1;
+    for (let k = 0; k < 4; k++) if (skinWeight!.getComponent(v, k) > best) { best = skinWeight!.getComponent(v, k); bone = skinIndex!.getComponent(v, k); }
+    return heads.has(bone);
+  };
+  const count = index ? index.count : uv!.count;
+  for (let i = 0; i < count; i += 3) {
+    const v = [0, 1, 2].map(n => (index ? index.getX(i + n) : i + n));
+    if (!v.some(onHead)) continue;
+    g.beginPath();
+    v.forEach((n, j) => g[j ? "lineTo" : "moveTo"](uv!.getX(n) * W, uv!.getY(n) * H));
+    g.closePath();
+    g.fill();
+    g.lineWidth = 6;
+    g.strokeStyle = "#fff";
+    g.stroke();
+  }
+  const d = g.getImageData(0, 0, W, H).data, out = new Uint8Array(W * H);
+  for (let p = 0; p < out.length; p++) out[p] = d[p * 4]! > 127 ? 1 : 0;
+  return out;
+}
+
 const PALETTE = [[118, 124, 123], [226, 214, 188], [58, 66, 68]] as const; // silver, cream, charcoal
 
 /**
@@ -31,7 +67,7 @@ const PALETTE = [[118, 124, 123], [226, 214, 188], [58, 66, 68]] as const; // si
  * plate seams across the silver, grooves where colours meet, and a brushed
  * grain. Returns the colour map and a matching height map for relief.
  */
-function brushedMetal(map: Texture) {
+function brushedMetal(map: Texture, plain?: Uint8Array) {
   const img = map.image as CanvasImageSource & { width: number; height: number };
   const W = img.width, H = img.height;
   const c = document.createElement("canvas");
@@ -68,8 +104,9 @@ function brushedMetal(map: Texture) {
     const s = (x + 90 * Math.sin(y / 110) + 25 * Math.sin(y / 37)) / 165;
     const f = s - Math.floor(s);
     let lift = 0;
-    if (k === 0 && f < 0.018) { lift = -36; height = 60; }
-    else if (k === 0 && f < 0.03) { lift = 12; height = 168; }
+    const seams = k === 0 && !plain?.[p];
+    if (seams && f < 0.018) { lift = -36; height = 60; }
+    else if (seams && f < 0.03) { lift = 12; height = 168; }
     if (k < 3 && edge(x, y)) { lift = -30; height = 80; }
     for (let n = 0; n < 3; n++) d.data[i + n] = clamp(tone[n]! + grain + lift, 0, 255);
     h.data[i] = h.data[i + 1] = h.data[i + 2] = clamp(height, 0, 255);
@@ -138,7 +175,9 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   const bones: Record<string, Bone> = {};
   gltf.scene.traverse(o => {
     if (o instanceof SkinnedMesh) {
-      o.material = brushedMetal((o.material as MeshStandardMaterial).map!);
+      const map = (o.material as MeshStandardMaterial).map!;
+      const { width, height } = map.image as { width: number; height: number };
+      o.material = brushedMetal(map, headMask(o, width, height));
       o.castShadow = true;
     }
     if (o instanceof Bone) bones[o.name] = o;
