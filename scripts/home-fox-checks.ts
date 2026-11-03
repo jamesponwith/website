@@ -19,24 +19,24 @@ async function restingEye(eye: Locator) {
 
 export async function verifyFox(page: Page) {
   const fox = page.locator("[data-fox]");
-  const eye = fox.locator("[data-fox-eye]").first();
+  const eye = fox.locator("[data-fox-look]").first();
   const position = () => eye.getAttribute("transform");
-  assert.ok(await fox.isVisible(), "the lean fox is rendered in the hero");
+  assert.ok(await fox.isVisible(), "the emblem fox is rendered in the hero");
   await page.mouse.move(1400, 100);
   await page.waitForFunction(() => {
-    const value = document.querySelector("[data-fox-eye]")!.getAttribute("transform") ?? "";
+    const value = document.querySelector("[data-fox-look]")!.getAttribute("transform") ?? "";
     return Number(value.match(/translate\(([-.\d]+)/)?.[1]) > 0.1;
   });
   await page.mouse.move(20, 100);
   await page.waitForFunction(() => {
-    const value = document.querySelector("[data-fox-eye]")!.getAttribute("transform") ?? "";
+    const value = document.querySelector("[data-fox-look]")!.getAttribute("transform") ?? "";
     return Number(value.match(/translate\(([-.\d]+)/)?.[1]) < -0.1;
   });
   const settled = await restingEye(eye);
   await page.waitForTimeout(100);
   assert.equal(await position(), settled, "gaze stops repainting once settled");
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.waitForFunction(() => document.querySelector("[data-fox-eye]")!.getAttribute("transform") === "translate(0 0)");
+  await page.waitForFunction(() => document.querySelector("[data-fox-look]")!.getAttribute("transform") === "translate(0 0)");
   await page.mouse.move(1400, 800);
   await page.waitForTimeout(100);
   assert.equal(await position(), "translate(0 0)", "reduced motion disables tracking");

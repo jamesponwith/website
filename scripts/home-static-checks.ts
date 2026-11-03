@@ -8,7 +8,7 @@ export async function verifyStaticHome(browser: Browser, base: string) {
   const stillPage = await stillContext.newPage();
   await stillPage.goto(`${base}/?hero=classic`);
   await stillPage.mouse.move(1200, 100);
-  assert.equal(await stillPage.locator("[data-fox-eye]").first().getAttribute("transform"), "translate(0 0)", "initial reduced motion keeps the fox centered");
+  assert.equal(await stillPage.locator("[data-fox-look]").first().getAttribute("transform"), "translate(0 0)", "initial reduced motion keeps the fox centered");
   await stillPage.locator("#connection-details > summary").click();
   await stillPage.locator(".tour").scrollIntoViewIfNeeded();
   await stillPage.locator("astro-island:not([ssr]) .tour").waitFor();

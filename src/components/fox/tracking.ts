@@ -1,8 +1,8 @@
 import { gazeBlend, gazeOffset } from "./gaze";
 
 export function trackFox(svg: SVGSVGElement) {
-  const eyes = [...svg.querySelectorAll<SVGGElement>("[data-fox-eye]")];
-  const head = svg.querySelector<SVGGElement>("[data-fox-head]")!;
+  const lean = svg.querySelector<SVGGElement>("[data-fox-look]")!;
+  const turn = svg.querySelector<SVGGElement>("[data-fox-turn]")!;
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   let visible = false;
   let frame = 0;
@@ -11,8 +11,9 @@ export function trackFox(svg: SVGSVGElement) {
   let target = { x: 0, y: 0 };
 
   function paint() {
-    eyes.forEach(eye => eye.setAttribute("transform", `translate(${current.x} ${current.y})`));
-    head.setAttribute("transform", `rotate(${current.x * .6} 422 226)`);
+    // The emblem leans toward the pointer: a small shift plus a turn.
+    lean.setAttribute("transform", `translate(${current.x * 4} ${current.y * 4})`);
+    turn.setAttribute("transform", `rotate(${current.x * 1.8} 310 210)`);
   }
 
   function settle() {
@@ -29,7 +30,7 @@ export function trackFox(svg: SVGSVGElement) {
     current.y += (target.y - current.y) * blend;
     paint();
     frame = 0;
-    if (Math.hypot(target.x - current.x, target.y - current.y) > .005) {
+    if (Math.hypot(target.x - current.x, target.y - current.y) > .001) {
       frame = requestAnimationFrame(animate);
     }
   }
@@ -46,7 +47,7 @@ export function trackFox(svg: SVGSVGElement) {
     const matrix = svg.getScreenCTM();
     if (!matrix) return;
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
-    look(gazeOffset(point.x - 431, point.y - 160));
+    look(gazeOffset(point.x - 310, point.y - 210));
   }
 
   const observer = new IntersectionObserver(([entry]) => {
