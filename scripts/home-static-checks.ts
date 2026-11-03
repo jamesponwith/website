@@ -6,9 +6,13 @@ import { HOME } from "../src/lib/site";
 export async function verifyStaticHome(browser: Browser, base: string) {
   const stillContext = await browser.newContext({ reducedMotion: "reduce" });
   const stillPage = await stillContext.newPage();
+  const models: string[] = [];
+  stillPage.on("request", request => { if (/fox\.glb/.test(request.url())) models.push(request.url()); });
   await stillPage.goto(`${base}/?hero=classic`);
   await stillPage.mouse.move(1200, 100);
-  assert.equal(await stillPage.locator("[data-fox-look]").first().getAttribute("transform"), "translate(0 0)", "initial reduced motion keeps the fox centered");
+  assert.equal(await stillPage.locator("[data-fox]").getAttribute("data-look"), "0 0", "initial reduced motion keeps the fox centered");
+  assert.ok(await stillPage.locator(".fox-poster").isVisible(), "reduced motion shows the still mascot");
+  assert.deepEqual(models, [], "reduced motion never downloads the 3D fox");
   await stillPage.locator("#connection-details > summary").click();
   await stillPage.locator(".tour").scrollIntoViewIfNeeded();
   await stillPage.locator("astro-island:not([ssr]) .tour").waitFor();
@@ -22,7 +26,7 @@ export async function verifyStaticHome(browser: Browser, base: string) {
   await staticPage.goto(base);
   assert.equal(await staticPage.locator(".download-primary [data-device-label]").innerText(), "Choose your platform", "without device detection, never guess Mac");
   assert.equal(await staticPage.locator(".download-primary").getAttribute("href"), "https://docs.phux.sh/installation", "the no-JS fallback is a real install guide");
-  assert.ok(await staticPage.locator("[data-fox]").isVisible(), "the fox remains visible without JavaScript");
+  assert.ok(await staticPage.locator(".fox-poster").isVisible(), "the fox remains visible without JavaScript");
   assert.equal((await staticPage.getByRole("heading", { level: 1 }).innerText()).replace(/\s+/g, " ").trim(), HOME.headline);
   assert.equal((await staticPage.locator(".hero-description").innerText()).trim(), "Your agents. Your machines. One workspace.");
   assert.equal(await staticPage.locator(".workflow-grid article").count(), 3, "the work loop does not require hydration");

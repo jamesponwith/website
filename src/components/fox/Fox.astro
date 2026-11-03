@@ -1,68 +1,50 @@
 ---
-// The approved Emblem Fox (phux-brand library/approved/emblem/source.png,
-// levelled 5%-22% and trimmed like tools/render-playground.sh), animated in
-// CSS the way the playground's celebrate and idle loops move it.
+// The hero fox: a 3D fox in brushed metal (scene.ts) walks in when motion is
+// allowed; reduced motion, no-JS and no-WebGL show the mascot still instead.
 ---
-<div class="fox-stage">
-  <svg data-fox viewBox="0 0 620 480" fill="none" role="img" aria-label="The phux silver fox">
-    <title>The phux silver fox</title>
-    <defs>
-      <linearGradient id="fox-sheen" x1="0" y1="0" x2="1" y2="0">
-        <stop stop-color="#fff" stop-opacity="0" /><stop offset=".5" stop-color="#fff" stop-opacity=".55" /><stop offset="1" stop-color="#fff" stop-opacity="0" />
-      </linearGradient>
-      <radialGradient id="fox-ground"><stop stop-color="#020809" stop-opacity=".7" /><stop offset="1" stop-color="#020809" stop-opacity="0" /></radialGradient>
-      <mask id="fox-mask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="620" height="480">
-        <image href="/fox/emblem.webp" x="131" y="52" width="358" height="362" />
-      </mask>
-    </defs>
-    <ellipse class="fox-shadow" cx="310" cy="452" rx="140" ry="13" fill="url(#fox-ground)" />
-    <g class="fox-arrive"><g class="fox-idle"><g data-fox-look><g data-fox-turn>
-      <image href="/fox/emblem.webp" x="131" y="52" width="358" height="362" />
-      <!-- One band of light crosses the metal as it lands, then now and then. -->
-      <g mask="url(#fox-mask)"><rect class="fox-sheen" x="-60" y="0" width="160" height="480" fill="url(#fox-sheen)" /></g>
-    </g></g></g></g>
-  </svg>
+<div class="fox-stage" data-fox>
+  <img class="fox-poster" src="/fox/mascot.webp" width="1100" height="767" alt="The phux silver fox" decoding="async" />
+  <canvas class="fox-canvas" aria-hidden="true"></canvas>
 </div>
+<!-- Before first paint: motion visitors wait for the 3D fox, not the still. -->
+<script is:inline>matchMedia("(prefers-reduced-motion: reduce)").matches || document.currentScript.previousElementSibling.setAttribute("data-pending", "")</script>
 <script>
   import { trackFox } from "./tracking";
-  document.querySelectorAll<SVGSVGElement>("[data-fox]").forEach(trackFox);
+  const stage = document.querySelector<HTMLElement>("[data-fox]");
+  const still = matchMedia("(prefers-reduced-motion: reduce)");
+  if (stage) {
+    let fox: { look(x: number, y: number): void; stop(): void } | undefined;
+    trackFox(stage, (x, y) => fox?.look(x, y));
+    const start = async () => {
+      if (still.matches || fox) return;
+      try {
+        // three.js loads only here, after first paint and only for motion.
+        const { startFox } = await import("./scene");
+        fox = await startFox(stage.querySelector("canvas")!, "/fox/fox.glb");
+        stage.dataset.live = "";
+      } catch {
+        // No WebGL or no model: the mascot stays.
+      } finally {
+        delete stage.dataset.pending;
+      }
+    };
+    if (document.readyState === "complete") void start();
+    else addEventListener("load", () => void start(), { once: true });
+    still.addEventListener("change", () => {
+      if (!still.matches) return void start();
+      fox?.stop();
+      fox = undefined;
+      delete stage.dataset.live;
+    });
+  }
 </script>
 <style>
-  .fox-stage { position: relative; width: 100%; isolation: isolate; }
+  .fox-stage { position: relative; width: 100%; aspect-ratio: 620 / 480; isolation: isolate; }
   .fox-stage::before { content: ""; position: absolute; z-index: -1; inset: 8% -8% 0; border-radius: 50%; background: radial-gradient(ellipse, var(--fox-halo), transparent 66%); }
-  svg { display: block; width: 100%; height: auto; overflow: visible; }
-  .fox-arrive, .fox-shadow, .fox-idle { transform-box: view-box; transform-origin: 310px 414px; }
-  .fox-sheen { opacity: 0; }
-  @media (prefers-reduced-motion: no-preference) {
-    svg { --spring: linear(0, .22 7%, .66 17%, .98 28%, 1.06 36%, 1.05 44%, 1.01 54%, .995 66%, 1); }
-    svg { animation: fox-focus .6s ease-out both; }
-    .fox-arrive { animation: fox-arrive 1.25s both; }
-    .fox-shadow { animation: fox-shadow 1.25s both, fox-shadow-idle 3.6s ease-in-out 1.25s infinite; }
-    .fox-idle { animation: fox-idle 3.6s ease-in-out 1.25s infinite; }
-    .fox-sheen { animation: fox-sheen 9s cubic-bezier(.45, 0, .25, 1) .95s infinite; }
-  }
-  @keyframes fox-focus { from { opacity: 0; filter: blur(8px); } to { opacity: 1; filter: blur(0); } }
-  /* Rise into a crouch, one hop with a twist, squash on landing, spring to rest. */
-  @keyframes fox-arrive {
-    0% { transform: translateY(26px) rotate(0) scale(.9, .9); animation-timing-function: cubic-bezier(.3, 0, .5, 1); }
-    20% { transform: translateY(8px) rotate(0) scale(1.05, .9); animation-timing-function: cubic-bezier(.15, .7, .35, 1); }
-    44% { transform: translateY(-36px) rotate(-5deg) scale(.96, 1.06); animation-timing-function: cubic-bezier(.6, 0, .85, .45); }
-    64% { transform: translateY(0) rotate(2deg) scale(1.07, .92); animation-timing-function: var(--spring); }
-    100% { transform: translateY(0) rotate(0) scale(1, 1); }
-  }
-  @keyframes fox-shadow {
-    0% { opacity: 0; transform: scale(.8); }
-    20% { opacity: 1; transform: scale(1.04); animation-timing-function: cubic-bezier(.15, .7, .35, 1); }
-    44% { opacity: .45; transform: scale(.7); animation-timing-function: cubic-bezier(.6, 0, .85, .45); }
-    64% { opacity: 1; transform: scale(1.08); animation-timing-function: var(--spring); }
-    100% { opacity: 1; transform: none; }
-  }
-  /* Idle: a slow hover and breath, the shadow answering the height. */
-  @keyframes fox-idle { 50% { transform: translateY(-8px) scale(1.012, 1.018); } }
-  @keyframes fox-shadow-idle { 50% { opacity: .75; transform: scale(.93); } }
-  @keyframes fox-sheen {
-    0% { opacity: 1; transform: translateX(80px) skewX(-18deg); }
-    14% { opacity: 1; transform: translateX(560px) skewX(-18deg); }
-    14.1%, 100% { opacity: 0; transform: translateX(560px) skewX(-18deg); }
-  }
+  .fox-poster { position: absolute; inset: 8% 0 4%; width: 100%; height: 88%; object-fit: contain; transition: opacity .3s; }
+  .fox-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .fox-canvas { opacity: 0; transition: opacity .4s; }
+  /* While the 3D fox loads or plays, the still steps aside. */
+  .fox-stage:is([data-pending], [data-live]) .fox-poster { opacity: 0; }
+  .fox-stage[data-live] .fox-canvas { opacity: 1; }
 </style>
