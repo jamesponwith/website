@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { SITE } from "../../../../lib/site";
-import { desktopDownload, desktopFirstOpen, desktopInstall, installTargets, iosDownload, type InstallTarget } from "../../../../lib/install";
+import { desktopFirstOpen, installTargets, iosDownload, runeDownload, runeInstall, type InstallTarget } from "../../../../lib/install";
 import { initialPhone, phones, wireBetaRequest, type Phone } from "../../../../lib/beta";
 import type { HookMoment } from "./install-hook";
 import "../../../../styles/mobile-access.css";
@@ -39,7 +39,7 @@ export default function InstallHook({moment,onCopy,hookRef,copyRef}:{moment:Hook
   const reset=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
   useEffect(()=>()=>clearTimeout(reset.current),[]);
   useEffect(()=>setPhone(initialPhone()),[]);
-  const mobile=target.id==="mobile",desktop=target.id==="desktop";
+  const mobile=target.id==="mobile",desktop=target.id==="rune";
   const command=target.command;
   const label=(item:InstallTarget)=>item.id==="mobile"?phones[phone].label:item.label;
   const choose=(next:InstallTarget)=>{setTarget(next);setStatus("");setCopied(false);};
@@ -59,12 +59,12 @@ export default function InstallHook({moment,onCopy,hookRef,copyRef}:{moment:Hook
     } catch {
       // Leave the whole command selected so ⌘C / long-press still works.
       if(code.current)getSelection()?.selectAllChildren(code.current);
-      setStatus(desktop?desktopInstall:"Press ⌘C / Ctrl+C to copy.");
+      setStatus(desktop?runeInstall:"Press ⌘C / Ctrl+C to copy.");
     }
   };
   // From a phone, the computer is the real destination: send it the command or the download.
   const share=async()=>{
-    try {await navigator.share(desktop?{title:"Phux for Mac",url:new URL(desktopDownload,SITE.url).href}:{title:"Install phux",text:command,url:SITE.url});onCopy();}
+    try {await navigator.share(desktop?{title:"Phux Rune for Mac",url:new URL(runeDownload,SITE.url).href}:{title:"Install phux",text:command,url:SITE.url});onCopy();}
     catch {/* The visitor dismissed the share sheet. */}
   };
   return <section ref={hookRef} className="install-hook" data-moment={moment} aria-label="Install phux">
@@ -75,11 +75,11 @@ export default function InstallHook({moment,onCopy,hookRef,copyRef}:{moment:Hook
       <div className="install-hook-line install-hook-download">
         <span className="install-hook-prompt" aria-hidden="true">↓</span>
         <span className="install-hook-what">Phux for Apple-silicon Mac</span>
-        <a className="install-hook-copy" href={desktopDownload} onClick={onCopy}>Download</a>
+        <a className="install-hook-copy" href={runeDownload} onClick={onCopy}>Download</a>
       </div>
       <p className="install-hook-status">
         <span role="status" aria-live="polite">{status||desktopFirstOpen}</span>
-        <button ref={copyRef} type="button" className="install-hook-alt" onClick={()=>void copy(desktopInstall)} aria-label="Copy the Desktop install command">{copied?"Copied ✓":"Terminal install"}</button>
+        <button ref={copyRef} type="button" className="install-hook-alt" onClick={()=>void copy(runeInstall)} aria-label="Copy the Rune install command">{copied?"Copied ✓":"Terminal install"}</button>
       </p>
     </>:<>
       <div className="install-hook-line" data-copied={copied}>

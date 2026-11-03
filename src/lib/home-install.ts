@@ -35,7 +35,7 @@ export function wireInstallTargets(copyButton: HTMLButtonElement | null) {
     targets.forEach(candidate => candidate.setAttribute("aria-pressed", String(candidate === target)));
     const command = target.dataset.installCommand ?? "";
     const mobile = command === "";
-    const desktop = target.dataset.installTarget === "desktop";
+    const desktop = target.dataset.installTarget === "rune";
     code.textContent = command;
     note.textContent = target.dataset.installNote ?? "";
     setInstallCopy(copyButton, command, desktop);

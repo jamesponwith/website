@@ -162,6 +162,7 @@ describe("MCP JSON-RPC", () => {
     );
     expect(install.inputSchema.properties.target.enum).toEqual([
       "cli",
+      "rune",
       "desktop",
       "skills",
     ]);

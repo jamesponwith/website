@@ -75,11 +75,11 @@ try {
     // this lazy iframe; capture the active viewport rather than changing its lifecycle.
     await page.screenshot({ path: `${artifacts}hero-${baseline ? "before" : "after"}-${width}.png` });
     assert.ok(await hero.getByRole("region", { name: "Install phux", exact: true }).isVisible(), "install controls keep an accessible name without a heading");
-    await hero.getByRole("button", { name: "Desktop", exact: true }).click();
-    assert.equal(await hero.getByRole("link", { name: "Download", exact: true }).getAttribute("href"), "/download/desktop", "Desktop is a download");
-    await hero.getByRole("button", { name: "Copy the Desktop install command", exact: true }).click();
+    await hero.getByRole("button", { name: "Rune", exact: true }).click();
+    assert.equal(await hero.getByRole("link", { name: "Download", exact: true }).getAttribute("href"), "/download/rune", "Rune is a download");
+    await hero.getByRole("button", { name: "Copy the Rune install command", exact: true }).click();
     await hero.getByRole("status").filter({ hasText: "Copied." }).waitFor();
-    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "curl -fsSL https://phux.sh/install-desktop | sh");
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "curl -fsSL https://phux.sh/install | sh -s -- --rune");
     assert.equal(await hero.locator(".install-hook").getByRole("status").innerText(), "Copied.", "copy feedback stays concise");
     await hero.getByRole("button", { name: "CLI", exact: true }).click();
     assert.equal(await hero.locator(".install-hook-line code").innerText(), "curl -fsSL https://phux.sh/install | sh");

@@ -4,6 +4,7 @@ import AuthReturn from "../components/AuthReturn.astro";
 import PhuxExplainer from "../components/motion/PhuxExplainer";
 import { SITE, docsHref } from "../lib/site";
 import release from "../lib/release.json";
+import { runeInstall } from "../lib/install";
 import MobileAccessForm from "../components/MobileAccessForm.astro";
 
 const cliInstall = "curl -fsSL https://phux.sh/install | sh";
@@ -53,15 +54,13 @@ const FEATURES = [
   <section class="wrap install" id="install">
     <h2>Install</h2>
     <div class="install-row">
-      <div class="install-cmd desktop-install">
-        <span>Desktop for macOS {release.desktop?.tag && <em>{release.desktop.tag}</em>}</span>
-        <code tabindex="0">{desktopInstall}</code>
-        <button type="button" data-copy={desktopInstall}>Copy</button>
+      <div class="install-cmd rune-install">
+        <span>Rune · alpha client</span>
+        <code tabindex="0">{runeInstall}</code>
+        <button type="button" data-copy={runeInstall}>Copy</button>
         <p>
-          Apple silicon · macOS 26 or later. The app includes the phux CLI and server. Open Phux.app.
-          Developer ID signed and Apple-notarized.{" "}
-          Homebrew: <code>brew install --cask no-phux/tap/phux-desktop</code>.{" "}
-          <a href={docsHref("/installation#desktop-app")}>Desktop install details</a>
+          Apple silicon · macOS 14 or later, or x86_64 Linux. Installs the phux CLI too if none is found.{" "}
+          <a href={docsHref("/clients#phux-rune")}>About Phux Rune</a>
         </p>
       </div>
       <div class="install-cmd">
@@ -353,17 +352,17 @@ const FEATURES = [
     border: 1px solid var(--color-rule);
     background: var(--color-surface);
   }
-  .desktop-install {
+  .rune-install {
     grid-column: 1 / -1;
   }
-  .desktop-install p {
+  .rune-install p {
     grid-column: 1 / -1;
     margin: 0;
     color: var(--color-dim);
     font-size: 13px;
     line-height: 1.6;
   }
-  .desktop-install a {
+  .rune-install a {
     color: var(--color-accent);
     text-decoration: underline;
   }
