@@ -23,9 +23,7 @@ export const installTargets: InstallTarget[] = [
   { id: "mobile", label: "Mobile", command: "", note: "No install: open the demo, press Enter, scan the QR, then drive the shell from your phone. Beta: TestFlight on iPhone, Google Play testing on Android." },
 ];
 
-/** The stable Apple-silicon Desktop archive; the site worker resolves it per click (host/download.ts). */
-export const desktopDownload = "/download/desktop";
-/** The latest Apple-silicon Rune archive, resolved the same way. */
+/** The latest Apple-silicon Rune archive; the site worker resolves it per click (host/download.ts). */
 export const runeDownload = "/download/rune";
 /** Existing enabled public TestFlight group, resolved by the site Worker. */
 export const iosDownload = "/download/ios";

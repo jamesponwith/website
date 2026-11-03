@@ -14,7 +14,7 @@ describe("device-first homepage installs", () => {
   });
   test("only the actual Mac action downloads a Mac archive", () => {
     for (const [platform, action] of Object.entries(installActions)) {
-      expect(action.href === "/download/desktop").toBe(platform === "mac");
+      expect(action.href === "/download/rune").toBe(platform === "mac");
     }
   });
   test("iOS uses a native TestFlight handoff; Android retains its existing access flow", () => {

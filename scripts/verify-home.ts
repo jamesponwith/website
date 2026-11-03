@@ -44,7 +44,7 @@ try {
   await verifyHomeContent(page);
   assert.equal(await page.locator("#home-light iframe").count(), 0, "no live app exists before scrolling");
   assert.ok(await page.locator(".client-comparison").isVisible(), "real product screenshots lead the page");
-  assert.equal(await page.locator(".download-primary").getAttribute("href"), "/download/desktop", "the primary action downloads the actual desktop release");
+  assert.equal(await page.locator(".download-primary").getAttribute("href"), "/download/rune", "the primary action downloads the Rune alpha release");
   await page.waitForTimeout(350);
   assert.ok(!requests.some(url => /(?:HeroDemo|PhuxTerminal|VgpuPrototype)[^/]*\.js|\.wasm|\/auth\/session|\/healthz|phux-architecture\.mp4/.test(url)), "first fold does not download React demos, GPU, WASM, film or allocate sessions");
   await verifyFox(page);
