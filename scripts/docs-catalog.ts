@@ -89,6 +89,7 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "host-services.md", slug: "host-services", group: "build", order: 2 },
   { file: "troubleshooting.md", slug: "troubleshooting", group: "help", order: 0 },
   { file: "architecture.md", slug: "architecture", group: "internals", order: 0 },
+  { file: "resource-kinds.md", slug: "resource-kinds", group: "internals", order: 0.25 },
   { file: "libghostty.md", slug: "libghostty", group: "internals", order: 0.5 },
   { file: "decisions.md", slug: "decisions", group: "internals", order: 1 },
   { file: "organization.md", slug: "organization", group: "internals", order: 2 },
