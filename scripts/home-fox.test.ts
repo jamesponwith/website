@@ -20,3 +20,19 @@ describe("fox gaze", () => {
     expect(gazeBlend(0)).toBe(0);
   });
 });
+
+describe("fox rig motion", () => {
+  test("starts far and transparent, walks, and arrives at full size", async () => {
+    const { poseAt, ENTRANCE_SECONDS } = await import("../src/components/fox/motion");
+    const first = poseAt(0), mid = poseAt(1.6), last = poseAt(ENTRANCE_SECONDS);
+    expect(first.stage.opacity).toBe(0);
+    expect(first.stage.approach).toContain("scale(0.7200)");
+    expect(Math.abs(mid.pose.front!.rot)).toBeGreaterThan(1);
+    expect(last.stage.approach).toContain("scale(1.0000)");
+    for (let t = 0; t <= ENTRANCE_SECONDS; t += 0.05) {
+      for (const pose of Object.values(poseAt(t).pose)) {
+        expect(Object.values(pose).every(Number.isFinite)).toBe(true);
+      }
+    }
+  });
+});

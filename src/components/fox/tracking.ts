@@ -1,4 +1,5 @@
 import { gazeBlend, gazeOffset } from "./gaze";
+import { GAZE, NECK } from "./rig";
 
 export function trackFox(svg: SVGSVGElement) {
   const lean = svg.querySelector<SVGGElement>("[data-fox-look]")!;
@@ -11,9 +12,9 @@ export function trackFox(svg: SVGSVGElement) {
   let target = { x: 0, y: 0 };
 
   function paint() {
-    // The emblem leans toward the pointer: a small shift plus a turn.
-    lean.setAttribute("transform", `translate(${current.x * 4} ${current.y * 4})`);
-    turn.setAttribute("transform", `rotate(${current.x * 1.8} 310 210)`);
+    // The head leans toward the pointer: a small shift plus a turn at the neck.
+    lean.setAttribute("transform", `translate(${current.x * 8} ${current.y * 7})`);
+    turn.setAttribute("transform", `rotate(${current.x * 2.6} ${NECK[0]} ${NECK[1]})`);
   }
 
   function settle() {
@@ -47,7 +48,8 @@ export function trackFox(svg: SVGSVGElement) {
     const matrix = svg.getScreenCTM();
     if (!matrix) return;
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
-    look(gazeOffset(point.x - 310, point.y - 210));
+    // The rig's user space is about 1.8x the old 620-wide frame.
+    look(gazeOffset((point.x - GAZE[0]) / 1.8, (point.y - GAZE[1]) / 1.8));
   }
 
   const observer = new IntersectionObserver(([entry]) => {

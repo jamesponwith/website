@@ -21,7 +21,10 @@ export async function verifyFox(page: Page) {
   const fox = page.locator("[data-fox]");
   const eye = fox.locator("[data-fox-look]").first();
   const position = () => eye.getAttribute("transform");
-  assert.ok(await fox.isVisible(), "the emblem fox is rendered in the hero");
+  assert.ok(await fox.isVisible(), "the rigged fox is rendered in the hero");
+  assert.equal(await fox.locator("[data-bone]").count(), 16, "every kit part is on the rig");
+  await page.waitForFunction(() => document.querySelector("[data-fox]")!.hasAttribute("data-live"), null, { timeout: 10000 });
+  assert.ok(await page.locator(".fox-poster").isHidden(), "the still mascot stays hidden while the rig plays");
   await page.mouse.move(1400, 100);
   await page.waitForFunction(() => {
     const value = document.querySelector("[data-fox-look]")!.getAttribute("transform") ?? "";
