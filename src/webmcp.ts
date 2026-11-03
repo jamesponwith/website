@@ -1,4 +1,5 @@
 // WebMCP tool registration for the public site.
+import { runeInstall } from "./lib/install";
 // The current report takes one ModelContextTool dictionary:
 // https://webmachinelearning.github.io/webmcp
 
@@ -57,6 +58,7 @@ const DOC_PATHS: Record<string, string> = {
 
 function installCommand(facts: SiteFacts, target: unknown): string {
   if (target === "desktop") return facts.desktopInstall;
+  if (target === "rune") return runeInstall;
   if (target === "skills") return "npx skills add no-phux/skills";
   return facts.cliInstall;
 }
@@ -72,13 +74,13 @@ export function siteTools(facts: SiteFacts): ModelContextTool[] {
   return [
     {
       name: "get_install_command",
-      description: `Get the installer for the ${facts.productName} CLI, Desktop, or agent skills.`,
+      description: `Get the installer for the ${facts.productName} CLI, the Rune alpha client, Desktop, or agent skills.`,
       inputSchema: {
         type: "object",
         properties: {
           target: {
             type: "string",
-            enum: ["cli", "desktop", "skills"],
+            enum: ["cli", "rune", "desktop", "skills"],
             description: `Which installer to return. Defaults to the ${facts.productName} CLI.`,
           },
         },

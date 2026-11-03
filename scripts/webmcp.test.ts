@@ -45,7 +45,10 @@ describe("site WebMCP registration", () => {
     await registerSiteTools(context, facts);
     const [install, docs, release] = context.tools;
     expect(await install.execute({})).toEqual({ command: facts.cliInstall });
-    expect(install.inputSchema.properties.target).toMatchObject({ enum: ["cli", "desktop", "skills"] });
+    expect(install.inputSchema.properties.target).toMatchObject({ enum: ["cli", "rune", "desktop", "skills"] });
+    expect(await install.execute({ target: "rune" })).toEqual({
+      command: "curl -fsSL https://phux.sh/install | sh -s -- --rune",
+    });
     expect(await install.execute({ target: "desktop" })).toEqual({
       command: facts.desktopInstall,
     });

@@ -1,14 +1,16 @@
 import { expect, test } from "bun:test";
 import { advanceMoment } from "../src/components/prototype/vgpu/live/install-hook";
 import { detectPhone, requestedNote } from "../src/lib/beta";
-import { cliInstall, desktopFirstOpen, desktopInstall, dryRun, installTargets } from "../src/lib/install";
+import { cliInstall, desktopFirstOpen, desktopInstall, dryRun, installTargets, runeInstall } from "../src/lib/install";
 
 test("the dry run is the same installer told to install nothing",()=>{
   expect(dryRun(cliInstall)).toBe("curl -fsSL https://phux.sh/install | sh -s -- --dry-run");
   expect(dryRun(desktopInstall)).toBe("curl -fsSL https://phux.sh/install-desktop | sh -s -- --dry-run");
+  expect(dryRun(runeInstall)).toBe("curl -fsSL https://phux.sh/install | sh -s -- --rune --dry-run");
   expect(dryRun("")).toBe("");
-  expect(installTargets.map(t=>t.id)).toEqual(["cli","desktop","mobile"]);
-  expect(installTargets.find(t=>t.id==="desktop")?.note).toBe("Apple-silicon Mac · or install from a terminal on macOS or Linux. Installs the phux CLI too if none is found.");
+  expect(installTargets.map(t=>t.id)).toEqual(["cli","rune","mobile"]);
+  expect(installTargets.find(t=>t.id==="rune")?.command).toBe("curl -fsSL https://phux.sh/install | sh -s -- --rune");
+  expect(installTargets.find(t=>t.id==="rune")?.note).toBe("Alpha · Apple-silicon Mac (macOS 14+) · or install from a terminal on macOS or x86_64 Linux. Installs the phux CLI too if none is found.");
   expect(desktopFirstOpen).toBe("First open: macOS asks to confirm an app downloaded from the internet. Choose Open.");
 });
 test("the visitor's phone is detected, and a computer has none",()=>{

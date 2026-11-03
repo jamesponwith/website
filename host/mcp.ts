@@ -48,6 +48,7 @@ interface ToolDef {
 
 const INSTALL_COMMANDS = {
   cli: "curl -fsSL https://phux.sh/install | sh",
+  rune: "curl -fsSL https://phux.sh/install | sh -s -- --rune",
   desktop: "curl -fsSL https://phux.sh/install-desktop | sh",
   skills: "npx skills add no-phux/skills",
 } as const;
@@ -116,14 +117,14 @@ const TOOLS: ToolDef[] = [
       properties: {
         target: {
           type: "string",
-          enum: ["cli", "desktop", "skills"],
+          enum: ["cli", "rune", "desktop", "skills"],
           description: "What to install. Defaults to the phux CLI.",
         },
       },
     },
     run: async (params) => {
       const target = params.target;
-      if (target === "desktop" || target === "skills") {
+      if (target === "rune" || target === "desktop" || target === "skills") {
         return INSTALL_COMMANDS[target];
       }
       return INSTALL_COMMANDS.cli;

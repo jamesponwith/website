@@ -105,17 +105,17 @@ try {
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "curl -fsSL https://phux.sh/install | sh");
   assert.equal(await page.getByRole("status").innerText(), "Install command copied.");
   // The hero switcher swaps the command on hover, focus, click, and arrows,
-  // turns Desktop into a download, and the third target into the beta request.
+  // turns Rune into a download, and the third target into the beta request.
   const command = page.locator("#install-command");
   const line = page.locator("#install .install-line");
   const request = page.locator("#install .install-request");
   const target = (name: string) => page.locator(`#install [data-install-target="${name}"]`);
-  assert.deepEqual(await page.locator("#install .install-tabs button").allInnerTexts(), ["CLI", "Desktop", "Mobile"], "three install targets");
+  assert.deepEqual(await page.locator("#install .install-tabs button").allInnerTexts(), ["CLI", "Rune", "Mobile"], "three install targets");
   const download = page.locator("#install-download");
-  await target("desktop").hover();
-  assert.ok(await download.isVisible(), "hover swaps to the desktop download");
-  assert.equal(await command.isHidden(), true, "Desktop leads with the download, not a command");
-  assert.equal(await download.getAttribute("href"), "/download/desktop", "the download is the worker's stable Mac archive redirect");
+  await target("rune").hover();
+  assert.ok(await download.isVisible(), "hover swaps to the Rune download");
+  assert.equal(await command.isHidden(), true, "Rune leads with the download, not a command");
+  assert.equal(await download.getAttribute("href"), "/download/rune", "the download is the worker's latest Rune archive redirect");
   assert.equal((await page.locator("#install-note").innerText()).trim(), "First open: macOS asks to confirm an app downloaded from the internet. Choose Open.", "the first-open line stays until a real Mac confirms it");
   assert.equal(await page.locator(".linux-desktop-note").count(), 0);
   await target("mobile").click();
@@ -125,11 +125,11 @@ try {
   assert.match(await page.locator("#install-note").innerText(), /TestFlight/, "the note describes the mobile target");
   await target("mobile").focus();
   await page.keyboard.press("ArrowLeft");
-  assert.ok(await download.isVisible(), "arrow keys move the target back to Desktop");
+  assert.ok(await download.isVisible(), "arrow keys move the target back to Rune");
   assert.equal(await request.isHidden(), true, "a command target hides the request form");
   assert.equal(await line.isVisible(), true, "a command target restores the command line");
   await page.getByRole("button", { name: "Copy install command" }).click();
-  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "curl -fsSL https://phux.sh/install-desktop | sh", "Desktop keeps its installer on the copy button");
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "curl -fsSL https://phux.sh/install | sh -s -- --rune", "Rune keeps its installer on the copy button");
   // Regression: a content-sized dock widened with the command and slid the
   // targets out from under the pointer. The dock and its targets are pinned.
   const box = (selector: string) =>
@@ -139,7 +139,7 @@ try {
     });
   const dock = await box("#install");
   const cliTarget = await box('#install [data-install-target="cli"]');
-  for (const name of ["desktop", "mobile", "cli"]) {
+  for (const name of ["rune", "mobile", "cli"]) {
     await target(name).hover();
     assert.deepEqual(await box("#install"), dock, `the dock keeps its box while ${name} is previewed`);
     assert.deepEqual(await box('#install [data-install-target="cli"]'), cliTarget, `targets stay pinned while ${name} is previewed`);
@@ -172,7 +172,7 @@ try {
     assert.ok(downloadBox.y + downloadBox.height < preview.y, "the primary download is visible before the reveal");
     assert.ok(downloadBox.y + downloadBox.height < (width < 600 ? 500 : 600), "install is reachable without scrolling");
     await page.locator(".install-options > summary").click();
-    for (const name of ["desktop", "cli"]) {
+    for (const name of ["rune", "cli"]) {
       await target(name).click();
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `no overflow with ${name} at ${width}px`);
     }
@@ -199,12 +199,8 @@ try {
   assert.equal(beta.payload?.email, "more@example.com", "/more still posts the TestFlight request");
   assert.ok(await page.locator("#beta form").isVisible(), "release signup is preserved");
   assert.equal(await page.locator("[data-copy]").count(), 2, "alternate installers preserved");
-  const macDesktop = await page.locator(".desktop-install p").innerText();
-  assert.match(macDesktop, /macOS 26 or later/);
-  assert.match(macDesktop, /The app includes the phux CLI and server/);
-  assert.match(macDesktop, /Developer ID signed and Apple-notarized/);
-  assert.ok(macDesktop.includes("Homebrew: brew install --cask no-phux/tap/phux-desktop"));
-  assert.doesNotMatch(macDesktop, /macOS 27|ad-hoc|not Apple-notarized/i);
+  assert.equal(await page.locator(".rune-install code").innerText(), "curl -fsSL https://phux.sh/install | sh -s -- --rune", "/more installs the Rune alpha client");
+  assert.match(await page.locator(".rune-install p").innerText(), /macOS 14 or later, or x86_64 Linux/);
   await page.goto(`${base}/privacy`);
   assert.equal(await page.getByRole("link", { name: "join the beta" }).getAttribute("href"), "/more#beta");
   assert.equal(await page.getByRole("link", { name: "request access to phux for iPhone" }).getAttribute("href"), "/more#testflight");

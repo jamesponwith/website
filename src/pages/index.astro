@@ -8,7 +8,7 @@ import MobileAccessForm from "../components/MobileAccessForm.astro";
 import LiveWorkspaceSection from "../components/LiveWorkspaceSection.astro";
 import WorkflowProof from "../components/WorkflowProof.astro";
 import { HOME, SITE, docsHref } from "../lib/site";
-import { cliInstall, desktopDownload, desktopFirstOpen, desktopInstall, installTargets } from "../lib/install";
+import { cliInstall, desktopFirstOpen, desktopInstall, installTargets, runeDownload } from "../lib/install";
 import release from "../lib/release.json";
 import brand from "../../brand.lock.json";
 import { installActions } from "../lib/home-platform";
@@ -41,7 +41,7 @@ const fallback = installActions.unknown;
                 type="button"
                 data-install-target={target.id}
                 data-install-command={target.command}
-                data-install-note={target.id === "desktop" ? desktopFirstOpen : target.note}
+                data-install-note={target.id === "rune" ? desktopFirstOpen : target.note}
                 aria-pressed={index === 0 ? "true" : "false"}
               >{target.label}</button>
             ))}
@@ -54,7 +54,7 @@ const fallback = installActions.unknown;
               <span class="install-prompt" aria-hidden="true">$</span>
               <code id="install-command">{cliInstall}</code>
             </span>
-            <a class="install-download" id="install-download" href={desktopDownload} hidden>Download for Mac ↓</a>
+            <a class="install-download" id="install-download" href={runeDownload} hidden>Download for Mac ↓</a>
             <button type="button" class="install-copy" data-copy={cliInstall} aria-label="Copy install command">Copy</button>
           </div>
           <div class="install-request mobile-access" data-mobile-access hidden>
