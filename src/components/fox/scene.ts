@@ -17,11 +17,15 @@ const out = (t: number) => 1 - (1 - t) ** 3;
 const inOut = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
 // Entrance beats, in seconds.
-const HOP = [0.35, 0.95] as const;
-const WALK = [1.05, 3.1] as const;
-const TURN = [2.6, 3.5] as const;
-export const SETTLED = 3.6;
-const START = new Vector3(-70, 0, -260);
+// A quick crouch, one low forward leap, then straight into the walk.
+const LEAP = [0.12, 0.52] as const;
+const WALK = [0.52, 2.6] as const;
+const TURN = [2.2, 3.0] as const;
+export const SETTLED = 3.1;
+const LEAP_SHARE = 0.33; // of the path covered in the air, so the walk picks up its speed
+const LEAP_HEIGHT = 40;
+const RUN_PHASE = 0.1; // Run clip phase held mid-air (fraction of the clip)
+const START = new Vector3(-150, 0, -250);
 const END = new Vector3(0, 0, 0);
 
 /**
@@ -187,6 +191,8 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   const clip = (name: string) => gltf.animations.find(a => a.name === name)!;
   const survey: AnimationAction = mixer.clipAction(clip("Survey")).play();
   const walk: AnimationAction = mixer.clipAction(clip("Walk")).play();
+  const run: AnimationAction = mixer.clipAction(clip("Run")).play();
+  const runLength = clip("Run").duration;
   const neck = bones.b_Neck_04!, head = bones.b_Head_05!, spine = bones.b_Spine02_03!, tail = bones.b_Tail01_012!;
   // three's mixer skips writing a bone whose clip value has not changed, so
   // with the idle frame held still our offsets would pile up. They are
@@ -199,30 +205,38 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   let t = 0;
 
   function pose(dt: number) {
+    // Path: a ballistic leap covers the first share, the walk the rest.
+    const u = clamp((t - LEAP[0]) / (LEAP[1] - LEAP[0]));
     const w = clamp((t - WALK[0]) / (WALK[1] - WALK[0]));
-    const p = START.clone().lerp(END, out(w));
-    const h = (t - HOP[0]) / (HOP[1] - HOP[0]);
-    let hopY = 0, pitch = 0, squash = 1;
-    if (h > 0 && h < 1) {
-      hopY = Math.sin(Math.PI * h) * 46;
-      pitch = -0.16 * Math.sin(Math.PI * h * 1.15) + 0.08 * Math.sin(Math.PI * clamp(h * 1.6 - 0.6));
-    } else if (h >= 1 && h < 1.35) squash = 1 - 0.06 * Math.sin((Math.PI * (h - 1)) / 0.35);
-    else if (h > -0.3 && h <= 0) squash = 1 - 0.07 * Math.sin((Math.PI * (h + 0.3)) / 0.3);
+    const along = t < WALK[0] ? LEAP_SHARE * u : LEAP_SHARE + (1 - LEAP_SHARE) * out(w);
+    const p = START.clone().lerp(END, along);
+    const airborne = t > LEAP[0] && t < LEAP[1];
+    const hopY = airborne ? 4 * LEAP_HEIGHT * u * (1 - u) : 0;
+    // The body follows the arc: nose up rising, nose down falling.
+    const pitch = airborne ? -0.22 * (1 - 2 * u) * Math.sin(Math.PI * u) ** 0.5 : 0;
+    // Crouch before take-off, absorb on landing.
+    const crouch = Math.sin(Math.PI * clamp(t / LEAP[0]));
+    const land = Math.sin(Math.PI * clamp((t - LEAP[1]) / 0.2));
+    const squash = 1 - 0.07 * crouch - 0.06 * land;
     rig.position.set(p.x, hopY, p.z);
     const heading = Math.atan2(END.x - START.x, END.z - START.z);
     const turn = inOut(clamp((t - TURN[0]) / (TURN[1] - TURN[0])));
     rig.rotation.set(pitch, heading * (1 - turn) + 0.75 * turn, 0, "YXZ");
     rig.scale.set(1, squash, 1);
     shadow.position.set(p.x, 0.5, p.z + 8);
-    const s = 130 * (1 - hopY / 160);
+    const s = 130 * (1 - hopY / 120);
     shadow.scale.set(s * 0.9, s * 1.7, 1);
-    (shadow.material as MeshBasicMaterial).opacity = 1 - hopY / 120;
+    (shadow.material as MeshBasicMaterial).opacity = 1 - hopY / 70;
 
-    // Walk while travelling; otherwise hold Survey's first, calm frame.
-    const wWalk = t > WALK[0] - 0.1 && t < WALK[1] + 0.2 ? clamp(Math.min((t - WALK[0] + 0.1) / 0.25, (WALK[1] + 0.2 - t) / 0.35)) : 0;
-    walk.setEffectiveWeight(wWalk);
+    // Legs: stretched Run pose in the air, Walk on the ground, Survey's calm frame at rest.
+    const wRun = airborne ? Math.sin(Math.PI * u) ** 0.6 : 0;
+    const wWalk = t > WALK[0] - 0.08 && t < WALK[1] + 0.2 ? clamp(Math.min((t - WALK[0] + 0.08) / 0.18, (WALK[1] + 0.2 - t) / 0.35)) : 0;
+    run.setEffectiveWeight(wRun);
+    run.time = runLength * RUN_PHASE;
+    run.timeScale = 0;
+    walk.setEffectiveWeight(wWalk * (1 - wRun));
     walk.timeScale = 1 - 0.45 * out(w);
-    survey.setEffectiveWeight(1 - wWalk);
+    survey.setEffectiveWeight(clamp(1 - wRun - wWalk));
     survey.time = 3; // a calm frame, facing the viewer
     survey.timeScale = 0;
     mixer.update(dt);
