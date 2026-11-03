@@ -6,7 +6,7 @@
  */
 import {
   ACESFilmicToneMapping, AnimationMixer, CanvasTexture, DirectionalLight, Group, Mesh, MeshBasicMaterial,
-  MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PMREMGenerator, Scene, SkinnedMesh, SRGBColorSpace, Vector3, WebGLRenderer,
+  MeshStandardMaterial, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry, PMREMGenerator, Scene, ShadowMaterial, SkinnedMesh, SRGBColorSpace, Vector3, WebGLRenderer,
   Bone, type AnimationAction, type Texture,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -24,31 +24,70 @@ export const SETTLED = 3.6;
 const START = new Vector3(-70, 0, -260);
 const END = new Vector3(0, 0, 0);
 
-/** Our palette on the model's own texture regions, with a brushed grain. */
+const PALETTE = [[118, 124, 123], [226, 214, 188], [58, 66, 68]] as const; // silver, cream, charcoal
+
+/**
+ * Our palette on the model's own texture regions, cut like the art: flowing
+ * plate seams across the silver, grooves where colours meet, and a brushed
+ * grain. Returns the colour map and a matching height map for relief.
+ */
 function brushedMetal(map: Texture) {
   const img = map.image as CanvasImageSource & { width: number; height: number };
+  const W = img.width, H = img.height;
   const c = document.createElement("canvas");
-  c.width = img.width; c.height = img.height;
+  c.width = W; c.height = H;
   const g = c.getContext("2d")!;
   g.drawImage(img, 0, 0);
-  const d = g.getImageData(0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, W, H);
+  // Classify: 0 silver (orange body), 1 cream (white), 2 charcoal (brown legs), 3 keep (eyes, nose).
+  const cls = new Uint8Array(W * H);
+  for (let p = 0; p < W * H; p++) {
+    const r = d.data[p * 4]!, gr = d.data[p * 4 + 1]!, b = d.data[p * 4 + 2]!, l = (r + gr + b) / 3;
+    cls[p] = l > 200 ? 1 : r > 150 && r - b > 80 ? 0 : l > 40 && r > b ? 2 : 3;
+  }
+  const edge = (x: number, y: number) => {
+    const k = cls[y * W + x]!;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && ny >= 0 && nx < W && ny < H && cls[ny * W + nx] !== k) return true;
+    }
+    return false;
+  };
+  const hc = document.createElement("canvas");
+  hc.width = W; hc.height = H;
+  const hg = hc.getContext("2d")!, h = hg.createImageData(W, H);
   let seed = 7;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const rows = Array.from({ length: c.height }, () => rnd() - 0.5);
-  for (let i = 0; i < d.data.length; i += 4) {
-    const r = d.data[i]!, gr = d.data[i + 1]!, b = d.data[i + 2]!;
-    const y = (i / 4 / c.width) | 0, x = (i / 4) % c.width;
+  const rows = Array.from({ length: H }, () => rnd() - 0.5);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const p = y * W + x, i = p * 4, k = cls[p]!;
     const grain = rows[y]! * 26 + Math.sin(x * 0.05 + y * 0.9) * 4;
-    const l = (r + gr + b) / 3;
-    // orange body -> silver, white chest/cheeks/tail tip -> cream, brown legs -> charcoal
-    const tone = l > 200 ? [226, 214, 188] : r > 150 && r - b > 80 ? [132, 138, 136] : l > 40 && r > b ? [58, 66, 68] : [r, gr, b];
-    for (let k = 0; k < 3; k++) d.data[i + k] = clamp(tone[k]! + grain, 0, 255);
+    let tone: readonly number[] = k < 3 ? PALETTE[k]! : [d.data[i]!, d.data[i + 1]!, d.data[i + 2]!];
+    let height = 150 + grain * 0.25;
+    // Flowing plate seams across the silver: a dark cut with a bright bevel after it.
+    const s = (x + 90 * Math.sin(y / 110) + 25 * Math.sin(y / 37)) / 165;
+    const f = s - Math.floor(s);
+    let lift = 0;
+    if (k === 0 && f < 0.018) { lift = -36; height = 60; }
+    else if (k === 0 && f < 0.03) { lift = 12; height = 168; }
+    if (k < 3 && edge(x, y)) { lift = -30; height = 80; }
+    for (let n = 0; n < 3; n++) d.data[i + n] = clamp(tone[n]! + grain + lift, 0, 255);
+    h.data[i] = h.data[i + 1] = h.data[i + 2] = clamp(height, 0, 255);
+    h.data[i + 3] = 255;
+    tone = PALETTE[0];
   }
   g.putImageData(d, 0, 0);
-  const t = new CanvasTexture(c);
-  t.flipY = map.flipY;
-  t.colorSpace = SRGBColorSpace;
-  return new MeshStandardMaterial({ map: t, metalness: 0.92, roughness: 0.3, flatShading: true });
+  hg.putImageData(h, 0, 0);
+  const colour = new CanvasTexture(c), relief = new CanvasTexture(hc);
+  for (const t of [colour, relief]) t.flipY = map.flipY;
+  colour.colorSpace = SRGBColorSpace;
+  const material = new MeshStandardMaterial({ map: colour, bumpMap: relief, bumpScale: 3, metalness: 0.92, roughness: 0.3, flatShading: true });
+  // A cool rim on edges turning away, so the silhouette reads on the dark page.
+  material.onBeforeCompile = shader => {
+    shader.fragmentShader = shader.fragmentShader.replace("#include <dithering_fragment>",
+      "float rim = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 3.0);\n gl_FragColor.rgb += vec3(0.55, 0.66, 0.78) * rim * 0.32;\n#include <dithering_fragment>");
+  };
+  return material;
 }
 
 function contactShadow() {
@@ -69,6 +108,8 @@ export interface FoxScene { look(x: number, y: number): void; stop(): void }
 /** Load the model into `canvas` and play the entrance. Rejects if WebGL or the model fails. */
 export async function startFox(canvas: HTMLCanvasElement, model: string): Promise<FoxScene> {
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = PCFSoftShadowMap;
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.85;
@@ -77,11 +118,18 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   scene.environmentIntensity = 0.95;
   const key = new DirectionalLight("#fff6e8", 3.2);
   key.position.set(-300, 500, 400);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.radius = 6;
+  Object.assign(key.shadow.camera, { left: -260, right: 260, top: 260, bottom: -260, near: 100, far: 1400 });
+  const floor = new Mesh(new PlaneGeometry(2000, 2000), new ShadowMaterial({ opacity: 0.32 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
   const rim = new DirectionalLight("#cfe3ff", 1.6);
   rim.position.set(400, 250, -500);
   const shadow = contactShadow();
   const rig = new Group();
-  scene.add(key, rim, shadow, rig);
+  scene.add(key, rim, floor, shadow, rig);
   const camera = new PerspectiveCamera(28, 1, 1, 5000);
   camera.position.set(104, 80, 238);
   camera.lookAt(-4, 44, -12);
@@ -89,7 +137,10 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   const gltf = await new GLTFLoader().loadAsync(model);
   const bones: Record<string, Bone> = {};
   gltf.scene.traverse(o => {
-    if (o instanceof SkinnedMesh) o.material = brushedMetal((o.material as MeshStandardMaterial).map!);
+    if (o instanceof SkinnedMesh) {
+      o.material = brushedMetal((o.material as MeshStandardMaterial).map!);
+      o.castShadow = true;
+    }
     if (o instanceof Bone) bones[o.name] = o;
   });
   rig.add(gltf.scene);
