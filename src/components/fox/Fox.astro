@@ -1,22 +1,26 @@
 ---
 // The hero fox: a 3D fox in brushed metal (scene.ts) walks in when motion is
-// allowed; reduced motion, no-JS and no-WebGL show the mascot still instead.
+// allowed on a larger screen; phones, data savers, reduced motion, no-JS and
+// no-WebGL show the mascot still instead.
 ---
 <div class="fox-stage" data-fox>
   <img class="fox-poster" src="/fox/mascot.webp" width="1100" height="767" alt="The phux silver fox" decoding="async" />
   <canvas class="fox-canvas" aria-hidden="true"></canvas>
 </div>
-<!-- Before first paint: motion visitors wait for the 3D fox, not the still. -->
-<script is:inline>matchMedia("(prefers-reduced-motion: reduce)").matches || document.currentScript.previousElementSibling.setAttribute("data-pending", "")</script>
+<!-- Before first paint: visitors who will get the 3D fox wait for it, not the still.
+     Phones and data savers keep the still: three.js and the model cost ~800 KB. -->
+<script is:inline>matchMedia("(prefers-reduced-motion: reduce), (max-width: 700px)").matches || navigator.connection?.saveData || document.currentScript.previousElementSibling.setAttribute("data-pending", "")</script>
 <script>
   import { trackFox } from "./tracking";
   const stage = document.querySelector<HTMLElement>("[data-fox]");
   const still = matchMedia("(prefers-reduced-motion: reduce)");
+  // Same rule as the inline script above.
+  const light = () => matchMedia("(max-width: 700px)").matches || Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
   if (stage) {
     let fox: { look(x: number, y: number): void; stop(): void } | undefined;
     trackFox(stage, (x, y) => fox?.look(x, y));
     const start = async () => {
-      if (still.matches || fox) return;
+      if (still.matches || light() || fox) return;
       try {
         // three.js loads only here, after first paint and only for motion.
         const { startFox } = await import("./scene");
