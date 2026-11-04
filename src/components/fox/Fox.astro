@@ -24,7 +24,7 @@
       try {
         // three.js loads only here, after first paint and only for motion.
         const { startFox } = await import("./scene");
-        fox = await startFox(stage.querySelector("canvas")!, "/fox/fox.glb");
+        fox = await startFox(stage.querySelector("canvas")!, "/fox/fox-sculpted.glb");
         stage.dataset.live = "";
       } catch {
         // No WebGL or no model: the mascot stays.
