@@ -195,10 +195,6 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   // The sculpted hind legs splay out and reach back; gather them in under the
   // hips so the fox stands compact and ready to move.
   const HIND_IN = (10 * Math.PI) / 180;
-  // The generated body's right hind leg sits further out and back than its
-  // bone (measured: 11 units out, 14 back); bring it in line with the left.
-  const RIGHT_EXTRA = (10 * Math.PI) / 180;
-  const RIGHT_TUCK = (14 * Math.PI) / 180;
   const HIND_TUCK = (10 * Math.PI) / 180;
   // Swing a bone about the fox's own forward axis, in its parent's space.
   const fwdAx = new Vector3();
@@ -267,8 +263,7 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
         bend(bones[thigh]!, h - HIND_TUCK * still); bend(bones[shin]!, -2 * h); bend(bones[foot]!, h);
       }
       // Hind legs drawn in under the hips (the fox's right is its -X side).
-      roll(bones.b_RightLeg01_019!, (HIND_IN + RIGHT_EXTRA) * still);
-      bend(bones.b_RightLeg01_019!, -RIGHT_TUCK * still);
+      roll(bones.b_RightLeg01_019!, HIND_IN * still);
       roll(bones.b_LeftLeg01_015!, -HIND_IN * still);
     }
 
