@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { latestCoreRelease, latestDesktopRelease } from "./fetch-release";
+import { latestCoreRelease, latestDesktopRelease, latestRuneRelease } from "./fetch-release";
 
 describe("latestCoreRelease", () => {
   test("selects the newest core release from mixed release streams", () => {
@@ -254,6 +254,7 @@ describe("release stamp command", () => {
     expect(result.stamp).toEqual({
       tag: null, url: null, publishedAt: null,
       desktop: { tag: null, url: null, publishedAt: null },
+      rune: { tag: null, url: null, publishedAt: null },
     });
     expect(result.stderr).toContain("badges omitted this build");
   });
@@ -265,5 +266,19 @@ describe("release stamp command", () => {
     expect(result.stamp.tag).toBeNull();
     expect(result.stamp.desktop.tag).toBeNull();
     expect(result.stderr).toContain("no core phux release found");
+  });
+});
+
+describe("latestRuneRelease", () => {
+  test("selects the newest Rune alpha by number, not release order", () => {
+    expect(
+      latestRuneRelease([
+        { tag_name: "rune-v0.1.0-alpha.9", prerelease: true, html_url: "https://example.test/a9", published_at: "2026-11-03T15:07:53Z" },
+        { tag_name: "rune-v0.1.0-alpha.10", prerelease: true, html_url: "https://example.test/a10", published_at: "2026-11-04T10:00:00Z" },
+        { tag_name: "rune-v0.1.0-alpha.11", prerelease: true, draft: true },
+        { tag_name: "desktop-v0.54.1" },
+        { tag_name: "v0.117.0" },
+      ]),
+    ).toEqual({ tag: "rune-v0.1.0-alpha.10", url: "https://example.test/a10", publishedAt: "2026-11-04T10:00:00Z" });
   });
 });

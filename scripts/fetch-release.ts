@@ -90,11 +90,17 @@ export function latestDesktopRelease(list: GitHubRelease[]): Release | null {
   return latestRelease(list, /^desktop-v(\d+)\.(\d+)\.(\d+)$/);
 }
 
+export function latestRuneRelease(list: GitHubRelease[]): Release | null {
+  // Rune, the alpha client, ships prereleases tagged rune-vX.Y.Z-alpha.N.
+  return latestRelease(list, /^rune-v(\d+)\.(\d+)\.(\d+)-alpha\.(\d+)$/, true);
+}
+
 interface StampedReleases {
   tag: string | null;
   url: string | null;
   publishedAt: string | null;
   desktop: Release;
+  rune: Release;
 }
 
 const EMPTY: Release = { tag: null, url: null, publishedAt: null };
@@ -124,16 +130,17 @@ async function main() {
     const stamped: StampedReleases = {
       ...release,
       desktop: latestDesktopRelease(list) ?? { ...EMPTY },
+      rune: latestRuneRelease(list) ?? { ...EMPTY },
     };
     await writeFile(OUT, JSON.stringify(stamped, null, 2) + "\n");
-    console.log(`fetch-release: stamped ${release.tag} + ${stamped.desktop.tag ?? "no-desktop"}`);
+    console.log(`fetch-release: stamped ${release.tag} + ${stamped.desktop.tag ?? "no-desktop"} + ${stamped.rune.tag ?? "no-rune"}`);
   } catch (err) {
     // Keep a previously stamped file if one exists; otherwise omit the badges.
     try {
       await readFile(OUT, "utf8");
       console.warn(`fetch-release: fetch failed (${err}); keeping existing release.json`);
     } catch {
-      const empty: StampedReleases = { ...EMPTY, desktop: { ...EMPTY } };
+      const empty: StampedReleases = { ...EMPTY, desktop: { ...EMPTY }, rune: { ...EMPTY } };
       await writeFile(OUT, JSON.stringify(empty, null, 2) + "\n");
       console.warn(`fetch-release: fetch failed (${err}); badges omitted this build`);
     }

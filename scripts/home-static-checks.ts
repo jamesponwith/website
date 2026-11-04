@@ -21,6 +21,15 @@ export async function verifyStaticHome(browser: Browser, base: string) {
   assert.ok(await stillPage.locator(".tour-summary").textContent(), "the illustration has a readable explanation");
   assert.match(await stillPage.locator(".tour-terminal").innerText(), /Finished/, "reduced motion shows the settled chapter");
   await stillContext.close();
+  const phoneContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const phonePage = await phoneContext.newPage();
+  const phoneModels: string[] = [];
+  phonePage.on("request", request => { if (/fox\.glb/.test(request.url())) phoneModels.push(request.url()); });
+  await phonePage.goto(base, { waitUntil: "load" });
+  await phonePage.waitForTimeout(500);
+  assert.ok(await phonePage.locator(".fox-poster").isVisible(), "phones show the still mascot");
+  assert.deepEqual(phoneModels, [], "phones never download the 3D fox");
+  await phoneContext.close();
   const staticContext = await browser.newContext({ javaScriptEnabled: false });
   const staticPage = await staticContext.newPage();
   await staticPage.goto(base);

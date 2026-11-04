@@ -6,7 +6,7 @@
  */
 import {
   ACESFilmicToneMapping, AnimationMixer, CanvasTexture, DirectionalLight, Group, Mesh, MeshBasicMaterial,
-  MeshStandardMaterial, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry, PMREMGenerator, Scene, ShadowMaterial, SkinnedMesh, SRGBColorSpace, Vector3, WebGLRenderer,
+  MeshStandardMaterial, PCFShadowMap, PerspectiveCamera, PlaneGeometry, PMREMGenerator, Scene, ShadowMaterial, SkinnedMesh, SRGBColorSpace, Vector3, WebGLRenderer,
   Bone, type AnimationAction, type Texture,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -150,7 +150,7 @@ export interface FoxScene { look(x: number, y: number): void; stop(): void }
 export async function startFox(canvas: HTMLCanvasElement, model: string): Promise<FoxScene> {
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.85;

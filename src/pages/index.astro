@@ -67,6 +67,7 @@ const fallback = installActions.unknown;
       </div>
         <p class="release-links">
           {release.url && <a href={release.url}>CLI {release.tag}</a>}
+          {release.rune?.url && <a href={release.rune.url}>Rune {release.rune.tag?.replace("rune-", "")}</a>}
           {release.desktop.url && <a href={release.desktop.url}>Desktop {release.desktop.tag?.replace("desktop-", "")}</a>}
           <a href={docsHref("/installation")}>Installation guide ↗</a>
         </p>
