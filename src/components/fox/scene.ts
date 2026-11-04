@@ -169,9 +169,9 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
     look.y += (look.ty * on - look.y) * Math.min(1, dt * 6);
     const headTurn = HEAD_TURN_WALK + (HEAD_TURN_REST - HEAD_TURN_WALK) * turn - look.x * LOOK_TURN;
     rig.updateMatrixWorld(true);
-    yaw(spine, headTurn * 0.2);
-    yaw(neck, headTurn * 0.35);
-    yaw(head, headTurn * 0.45);
+    yaw(spine, headTurn * 0.1);
+    yaw(neck, headTurn * 0.3);
+    yaw(head, headTurn * 0.6);
     head.rotation.x += look.y * 0.3;
   }
 

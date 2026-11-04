@@ -131,6 +131,16 @@ d = nose.co - pivot
 yaw = math.atan2(d.x, -d.y)  # 0 when the nose points along -Y
 print("HEAD yaw deg", round(math.degrees(yaw), 1), "nose", tuple(round(c, 1) for c in nose.co))
 # Turned back at runtime by yawing the spine/neck/head bones (see scene.ts).
+# Keep the head rigid: double the head bone's share wherever it already has a
+# real say (ears included), so the turn does not bend the ears.
+hi = gi["b_Head_05"]
+for v in fox.data.vertices:
+    wh = next((g.weight for g in v.groups if g.group == hi), 0.0)
+    if wh < 0.15: continue
+    boosted = min(1.0, wh * 2)
+    rest = sum(g.weight for g in v.groups if g.group != hi)
+    for g in v.groups:
+        g.weight = boosted if g.group == hi else (g.weight / rest * (1 - boosted) if rest else 0.0)
 fox.parent = arm
 fox.matrix_parent_inverse = arm.matrix_world.inverted()
 am = fox.modifiers.new("Armature", "ARMATURE"); am.object = arm
