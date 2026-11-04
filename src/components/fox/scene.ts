@@ -28,6 +28,16 @@ const LEAP_HEIGHT = 40;
 const RUN_PHASE = 0.1; // Run clip phase held mid-air (fraction of the clip)
 const START = new Vector3(-150, 0, -250);
 const END = new Vector3(0, 0, 0);
+// The walk must travel exactly as fast as a planted paw sweeps back, or the
+// fox skates. STRIDE is that sweep speed for the Walk clip at timeScale 1;
+// the clip starts brisk and slows on arrival, and the body follows it.
+const STRIDE = 140;
+const WALK_DIST = (1 - LEAP_SHARE) * START.distanceTo(END);
+const SLOW = 0.6; // the clip ends at 40% of its starting speed
+const RATE = 0.916 / (SLOW * (WALK[1] - WALK[0])); // ln(1 / (1 - SLOW)) spread over the walk
+const WALK_SPEED = (RATE * WALK_DIST) / STRIDE; // the clip's starting timeScale
+/** Share of the walk distance covered t seconds into the walk (0..1). */
+const walked = (t: number) => Math.min(1, (1 - Math.exp(-SLOW * RATE * Math.max(0, t))) / SLOW);
 // The mascot was drawn with its head turned to the viewer, and the model kept
 // that turn. Yaw it back to face the way it walks, then partly toward the
 // camera at rest, spread down the spine so the neck twists, never tears.
@@ -135,8 +145,8 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   function pose(dt: number) {
     // Path: a ballistic leap covers the first share, the walk the rest.
     const u = clamp((t - LEAP[0]) / (LEAP[1] - LEAP[0]));
-    const w = clamp((t - WALK[0]) / (WALK[1] - WALK[0]));
-    const along = t < WALK[0] ? LEAP_SHARE * u : LEAP_SHARE + (1 - LEAP_SHARE) * out(w);
+    const stride = walked(t - WALK[0]);
+    const along = t < WALK[0] ? LEAP_SHARE * u : LEAP_SHARE + (1 - LEAP_SHARE) * stride;
     const p = START.clone().lerp(END, along);
     const airborne = t > LEAP[0] && t < LEAP[1];
     const hopY = airborne ? 4 * LEAP_HEIGHT * u * (1 - u) : 0;
@@ -163,7 +173,7 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
     run.time = runLength * RUN_PHASE;
     run.timeScale = 0;
     walk.setEffectiveWeight(wWalk * (1 - wRun));
-    walk.timeScale = 1 - 0.45 * out(w);
+    walk.timeScale = WALK_SPEED * (1 - SLOW * stride);
     survey.setEffectiveWeight(clamp(1 - wRun - wWalk));
     survey.time = 3; // a calm frame, facing the viewer
     survey.timeScale = 0;
