@@ -7,7 +7,7 @@ export async function verifyStaticHome(browser: Browser, base: string) {
   const stillContext = await browser.newContext({ reducedMotion: "reduce" });
   const stillPage = await stillContext.newPage();
   const models: string[] = [];
-  stillPage.on("request", request => { if (/fox\.glb/.test(request.url())) models.push(request.url()); });
+  stillPage.on("request", request => { if (/\/fox\/.*\.glb/.test(request.url())) models.push(request.url()); });
   await stillPage.goto(`${base}/?hero=classic`);
   await stillPage.mouse.move(1200, 100);
   assert.equal(await stillPage.locator("[data-fox]").getAttribute("data-look"), "0 0", "initial reduced motion keeps the fox centered");
@@ -24,7 +24,7 @@ export async function verifyStaticHome(browser: Browser, base: string) {
   const phoneContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const phonePage = await phoneContext.newPage();
   const phoneModels: string[] = [];
-  phonePage.on("request", request => { if (/fox\.glb/.test(request.url())) phoneModels.push(request.url()); });
+  phonePage.on("request", request => { if (/\/fox\/.*\.glb/.test(request.url())) phoneModels.push(request.url()); });
   await phonePage.goto(base, { waitUntil: "load" });
   await phonePage.waitForTimeout(500);
   assert.ok(await phonePage.locator(".fox-poster").isVisible(), "phones show the still mascot");
