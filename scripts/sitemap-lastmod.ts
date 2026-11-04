@@ -30,11 +30,18 @@ export function repositoryShallow(repo: string): boolean {
   return value;
 }
 
-/** A W3C / ISO-8601 instant that is not more than a day ahead of `now`. */
+/**
+ * A W3C / ISO-8601 instant on a real calendar day that is not more than a day
+ * ahead of `now`. `Date.parse` rolls an impossible day such as 02-30 into the
+ * next month instead of rejecting it, so the day is checked separately.
+ */
 export function validLastmod(value: string | undefined, now = Date.now()): string | undefined {
   if (!value || !LASTMOD.test(value)) return undefined;
   const parsed = Date.parse(value);
   if (!Number.isFinite(parsed) || parsed > now + FUTURE_SLACK_MS) return undefined;
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number) as [number, number, number];
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  if (calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) return undefined;
   return value;
 }
 
@@ -78,9 +85,13 @@ export function sourceCommitDate(file: string): string | undefined {
   return sourceLastmod(top, spec);
 }
 
-/** Sitemap URLs whose lastmod is older than that path's source date. */
-export function urlsOlderThanSource(xml: string, dates: Map<string, string>): string[] {
-  const older: string[] = [];
+/**
+ * Sitemap URLs whose lastmod is not that path's source date: a different
+ * instant (older, or fresh but wrong), or a lastmod on a path no source dates.
+ * Serialize copies the source instant verbatim, so equality is exact.
+ */
+export function urlsMismatchingSource(xml: string, dates: Map<string, string>): string[] {
+  const mismatched: string[] = [];
   for (const match of xml.matchAll(/<url>[\s\S]*?<\/url>/g)) {
     const block = match[0];
     const loc = block.match(/<loc>([^<]+)<\/loc>/)?.[1];
@@ -93,13 +104,10 @@ export function urlsOlderThanSource(xml: string, dates: Map<string, string>): st
       continue;
     }
     const source = dates.get(path);
-    if (!source) continue;
-    const emitted = Date.parse(lastmod);
-    const git = Date.parse(source);
-    if (!Number.isFinite(emitted) || !Number.isFinite(git) || emitted >= git) continue;
-    older.push(loc);
+    if (source && Date.parse(lastmod) === Date.parse(source)) continue;
+    mismatched.push(loc);
   }
-  return older;
+  return mismatched;
 }
 
 /** `<loc>` values whose `<url>` or `<sitemap>` block has no lastmod. */

@@ -68,7 +68,6 @@ npx skills add no-phux/skills                    # agent skills
 - [Run a command in a pane and get its output and exit code](https://docs.phux.sh/pane-command): `phux run` types a command into a pane, waits, and exits with its status; includes a tmux mapping table.
 - [Give your agent a terminal over MCP](https://docs.phux.sh/terminal-mcp): register `phux mcp`, the MCP server built into phux, so your agent can drive local panes.
 - [ACP-owned sessions](https://docs.phux.sh/acp): provider readiness, typed commands, human permissions, and uncertain outcomes.
-- [Terminal MCP adapter](https://docs.phux.sh/agents): connect to your running local phux server, not the hosted docs service.
 - [Remote access](https://docs.phux.sh/remote): connect machines and repair connections.
 - [Reach your coding agents over Tailscale and SSH](https://docs.phux.sh/tailscale): list tailnet machines with `phux host discover`, or add one over SSH, then `phux attach`.
 - [Clients](https://docs.phux.sh/clients): TUI, desktop, web, and native consumer paths.

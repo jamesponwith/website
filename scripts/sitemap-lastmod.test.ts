@@ -9,8 +9,8 @@ import {
   repositoryShallow,
   sourceCommitDate,
   sourceLastmod,
+  urlsMismatchingSource,
   urlsMissingLastmod,
-  urlsOlderThanSource,
   validLastmod,
 } from "./sitemap-lastmod";
 
@@ -42,6 +42,15 @@ describe("sitemap lastmod", () => {
     expect(validLastmod("2026-10-27T08:41:11+00:00", now)).toBe("2026-10-27T08:41:11+00:00");
   });
 
+  test("rejects an impossible calendar day that Date.parse would roll over", () => {
+    const now = Date.parse("2026-10-29T00:00:00Z");
+    expect(Number.isFinite(Date.parse("2026-02-30T00:00:00Z"))).toBe(true);
+    expect(validLastmod("2026-02-30T00:00:00Z", now)).toBeUndefined();
+    expect(validLastmod("2026-04-31T00:00:00Z", now)).toBeUndefined();
+    expect(validLastmod("2024-02-29T00:00:00Z", now)).toBe("2024-02-29T00:00:00Z");
+    expect(validLastmod("2026-02-28T00:00:00Z", now)).toBe("2026-02-28T00:00:00Z");
+  });
+
   test("a future sourceMtime is not emitted", () => {
     const root = mkdtempSync(join(tmpdir(), "lastmod-future-"));
     const synced = join(root, "src/content/docs/_synced");
@@ -56,12 +65,24 @@ sourceMtime: "2099-01-01T00:00:00Z"
     expect(pageLastmods(root).has("/plugins")).toBe(false);
   });
 
-  test("a lastmod older than the source file fails the staleness check", () => {
+  test("a lastmod that is not the source file's date fails, older or fresh but wrong", () => {
     const dates = new Map([["/plugins", "2026-10-27T00:00:00Z"]]);
     const stale = `<url><loc>https://docs.phux.sh/plugins</loc><lastmod>2020-01-01T00:00:00Z</lastmod></url>`;
-    const fresh = `<url><loc>https://docs.phux.sh/plugins</loc><lastmod>2026-10-27T00:00:00Z</lastmod></url>`;
-    expect(urlsOlderThanSource(stale, dates)).toEqual(["https://docs.phux.sh/plugins"]);
-    expect(urlsOlderThanSource(fresh, dates)).toEqual([]);
+    const wrong = `<url><loc>https://docs.phux.sh/plugins</loc><lastmod>2026-10-28T00:00:00Z</lastmod></url>`;
+    const exact = `<url><loc>https://docs.phux.sh/plugins</loc><lastmod>2026-10-27T00:00:00Z</lastmod></url>`;
+    const offset = `<url><loc>https://docs.phux.sh/plugins</loc><lastmod>2026-10-26T20:00:00-04:00</lastmod></url>`;
+    expect(urlsMismatchingSource(stale, dates)).toEqual(["https://docs.phux.sh/plugins"]);
+    expect(urlsMismatchingSource(wrong, dates)).toEqual(["https://docs.phux.sh/plugins"]);
+    expect(urlsMismatchingSource(exact, dates)).toEqual([]);
+    expect(urlsMismatchingSource(offset, dates)).toEqual([]);
+  });
+
+  test("a lastmod on a path no source dates is a mismatch, not a pass", () => {
+    const dates = new Map([["/plugins", "2026-10-27T00:00:00Z"]]);
+    const unmapped = `<url><loc>https://docs.phux.sh/ghost</loc><lastmod>2026-10-27T00:00:00Z</lastmod></url>`;
+    const undated = `<url><loc>https://docs.phux.sh/ghost</loc></url>`;
+    expect(urlsMismatchingSource(unmapped, dates)).toEqual(["https://docs.phux.sh/ghost"]);
+    expect(urlsMismatchingSource(undated, dates)).toEqual([]);
   });
 
   test("compares committer instants across offsets", () => {

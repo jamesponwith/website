@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { GATED_LLMS_PAGES, llmsTxtListsPage, publishLlmsTxt } from "./publish-llms";
+import { GATED_LLMS_PAGES, docsPathnames, llmsTxtListsPage, publishLlmsTxt } from "./publish-llms";
 
 const indexed = await readFile(new URL("../public/llms.txt", import.meta.url), "utf8");
 const building = "/building";
@@ -61,6 +61,19 @@ describe("published llms.txt", () => {
     const published = await publish(["any-program-status.html"], source);
     expect(llmsTxtListsPage(published, building)).toBe(false);
     expect(llmsTxtListsPage(published, status)).toBe(true);
+  });
+
+  test("a trailing slash, a query or a fragment still name the gated page", () => {
+    for (const href of [
+      "https://docs.phux.sh/building",
+      "https://docs.phux.sh/building/",
+      "https://docs.phux.sh/building?x=1",
+      "https://docs.phux.sh/building/?x=1#entry-points",
+    ]) {
+      expect(docsPathnames(`- [Build on phux](${href}): the entry point.`), href).toEqual(["/building"]);
+    }
+    expect(docsPathnames("- [root](https://docs.phux.sh/)")).toEqual(["/"]);
+    expect(docsPathnames("- [elsewhere](https://phux.sh/building/)")).toEqual([]);
   });
 
   test("the docs build calls publishLlmsTxt", async () => {
