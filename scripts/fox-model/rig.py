@@ -181,7 +181,7 @@ CHAINS = {
     "hind_r": ["b_RightLeg01_019", "b_RightLeg02_020", "b_RightFoot01_021"],  # toe bone left out:
     "hind_l": ["b_LeftLeg01_015", "b_LeftLeg02_016", "b_LeftFoot01_017"],    # paws stay rigid
 }
-BLEND = 3.0
+BLEND = 7.0  # a joint bends over this many units, so it curves rather than creases
 def joint_z(name):
     return (arm.matrix_world @ arm.data.bones[name].head_local).z
 # Which leg a vertex belongs to is decided by where it is (side, front/back),

@@ -108,10 +108,10 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   // three's mixer skips writing a bone whose clip value has not changed, so
   // with the idle frame held still our offsets would pile up. They are
   // applied for the render only, then undone.
-  // The walk flexes paws and hocks hard enough to fold this sculpted body's
-  // paws under and stretch its hind legs; ease them halfway to standing.
+  // The walk flexes elbows, paws and hocks hard enough to kink this sculpted
+  // body's stockings and stretch its hind legs; ease them halfway to standing.
   const DAMP = 0.5;
-  const damped = ["b_RightHand_08", "b_LeftHand_011", "b_RightFoot01_021", "b_LeftFoot01_017", "b_RightFoot02_022", "b_LeftFoot02_018"]
+  const damped = ["b_RightForeArm_07", "b_LeftForeArm_010", "b_RightHand_08", "b_LeftHand_011", "b_RightFoot01_021", "b_LeftFoot01_017", "b_RightFoot02_022", "b_LeftFoot02_018"]
     .map(name => bones[name]!).filter(Boolean);
   const offsetBones = [neck, head, spine, tail, ...damped];
   let standing: Quaternion[] | undefined;
