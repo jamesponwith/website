@@ -68,6 +68,46 @@ for o in bpy.context.selected_objects: o.select_set(False)
 fox.select_set(True)
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
+# 3b. The far ear was hidden in the 2D art and came out malformed: replace it
+# with a mirror of the good (left) ear across the head's midplane.
+def fix_ear(obj, ear_frac=0.17, sink=2.5):
+    me = obj.data
+    bm = bmesh.new(); bm.from_mesh(me)
+    bm.verts.ensure_lookup_table()
+    zs = [v.co.z for v in bm.verts]
+    zmax, height = max(zs), max(zs) - min(zs)
+    base = zmax - ear_frac * height
+    tops = sorted(bm.verts, key=lambda v: -v.co.z)[:300]
+    # Two ear clusters by a tiny 2-means in XY, seeded by the two farthest tops.
+    a = tops[0].co.copy(); b = max(tops, key=lambda v: (v.co - a).xy.length).co.copy()
+    for _ in range(8):
+        A = [v.co for v in tops if (v.co - a).xy.length <= (v.co - b).xy.length]
+        B = [v.co for v in tops if (v.co - a).xy.length > (v.co - b).xy.length]
+        a, b = sum(A, Vector()) / len(A), sum(B, Vector()) / len(B)
+    m = (a + b) / 2
+    n = Vector(((b - a).x, (b - a).y, 0)).normalized()  # midplane normal
+    # Forward: toward the nose, the head point farthest from the ears' midpoint.
+    head = [v.co for v in bm.verts if v.co.z > zmax - 0.42 * height and (v.co - m).xy.length < 0.45 * height]
+    nose = max(head, key=lambda c: abs((c - m).xy.dot(Vector((-n.y, n.x)))))
+    fwd = Vector((-n.y, n.x, 0))
+    if (nose - m).dot(fwd) < 0: fwd = -fwd
+    left = fwd.cross(Vector((0, 0, 1)))  # the fox's left, looking along fwd (Blender is Z-up)
+    good_sign = 1 if (a - m).dot(left) > 0 else -1
+    good_sign = good_sign if (a - m).dot(n) > 0 else -good_sign  # in terms of n
+    side = lambda co: (co - m).dot(n)
+    bad = [v for v in bm.verts if v.co.z > base and side(v.co) * good_sign < -0.5]
+    good_faces = [f for f in bm.faces if all(v.co.z > base - sink and side(v.co) * good_sign > 0.5 for v in f.verts)]
+    bmesh.ops.delete(bm, geom=bad, context="VERTS")
+    dup = bmesh.ops.duplicate(bm, geom=good_faces)
+    new_verts = [g for g in dup["geom"] if isinstance(g, bmesh.types.BMVert)]
+    for v in new_verts:
+        d = side(v.co)
+        v.co = v.co - 2 * d * n
+    bmesh.ops.reverse_faces(bm, faces=[g for g in dup["geom"] if isinstance(g, bmesh.types.BMFace)])
+    bm.to_mesh(me); bm.free(); me.update()
+    print("EAR fixed: removed", len(bad), "verts, mirrored", len(good_faces), "faces; base z", round(base, 1))
+fix_ear(fox)
+
 # 4. Fit the skeleton to the new body: vertical scale from back height, lateral from paw spread.
 def back_height(o, y0, y1):
     return max(v.z for v in world_verts(o) if y0 < v.y < y1)
