@@ -156,10 +156,21 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   const damped = ["b_RightForeArm_07", "b_LeftForeArm_010", "b_RightHand_08", "b_LeftHand_011", "b_RightFoot01_021", "b_LeftFoot01_017", "b_RightFoot02_022", "b_LeftFoot02_018"]
     .map(name => bones[name]!).filter(Boolean);
   const bindPose = damped.map(b => b.quaternion.clone()); // before any clip runs
-  const offsetBones = [neck, head, spine, tail, ...damped];
+  // At rest the hips, spine and legs return to the sculpted stance (all four
+  // paws level), not the idle clip's, which stands the fox with its weight to
+  // one side: one front paw sinks into the floor and the other lifts.
+  const LEG_BONES = ["b_Hip_01", "b_Spine01_02", "b_Spine02_03", "b_RightUpperArm_06", "b_RightForeArm_07", "b_RightHand_08", "b_LeftUpperArm_09", "b_LeftForeArm_010", "b_LeftHand_011",
+    "b_RightLeg01_019", "b_RightLeg02_020", "b_RightFoot01_021", "b_RightFoot02_022", "b_LeftLeg01_015", "b_LeftLeg02_016", "b_LeftFoot01_017", "b_LeftFoot02_018"]
+    .map(name => bones[name]!).filter(Boolean);
+  const legBind = LEG_BONES.map(b => b.quaternion.clone());
+  const hip = bones.b_Hip_01!, hipBind = hip.position.clone(), hipClip = new Vector3();
+  const offsetBones = [...new Set([neck, head, spine, tail, ...damped, ...LEG_BONES])];
   let standing: Quaternion[] | undefined;
   let base = offsetBones.map(b => b.quaternion.clone());
-  const undoOffsets = () => offsetBones.forEach((b, i) => b.quaternion.copy(base[i]!));
+  const undoOffsets = () => {
+    offsetBones.forEach((b, i) => b.quaternion.copy(base[i]!));
+    hip.position.copy(hipClip);
+  };
 
   const look = { x: 0, y: 0, tx: 0, ty: 0 };
   let t = 0;
@@ -211,6 +222,12 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
     damped.forEach((b, i) => wrists.has(b.name)
       ? b.quaternion.slerp(bindPose[i]!, WRIST_DAMP)
       : b.quaternion.slerp(standing![i]!, DAMP));
+    const still = clamp(1 - wRun - wWalk);
+    hipClip.copy(hip.position);
+    if (still > 0) {
+      LEG_BONES.forEach((b, i) => b.quaternion.slerp(legBind[i]!, still));
+      hip.position.lerp(hipBind, still);
+    }
 
     // Idle on top: a breath, a slow tail sway. Then the pointer look.
     const idle = clamp((t - WALK[1] + FADE) / 0.8);

@@ -260,6 +260,19 @@ for v in fox.data.vertices:
         fox.vertex_groups[tails[k]].add([v.index], 1.0, "REPLACE")
     detailed += 1
 print("TAIL freed", detailed, "verts from the legs")
+# The generated body has paws at slightly different heights (one front paw
+# floats ~2 units), which reads as one leg standing lower. Set every paw's
+# sole on the ground, easing the shift out up the lower leg.
+soles = {}
+for name in CHAINS:
+    vs = [v for v in fox.data.vertices if v.co.z < 20 and chain_of(v.co) == name and in_leg(name, v.co)]
+    if not vs: continue
+    lift = min(v.co.z for v in vs)
+    soles[name] = round(lift, 2)
+    for v in vs:
+        f = 1.0 if v.co.z < 6 else max(0.0, (20 - v.co.z) / 14)
+        v.co.z -= lift * f
+print("SOLES grounded (was)", soles)
 print("LEGS reweighted", releg, "verts; joints", {k: [round(joint_z(n), 1) for n in c] for k, c in CHAINS.items()})
 
 # Keep the head rigid: double the head bone's share wherever it already has a
