@@ -181,6 +181,17 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
     up.set(0, 1, 0).applyQuaternion(parentQ.invert());
     bone.quaternion.premultiply(turnBy.setFromAxisAngle(up, angle));
   };
+  // Bend a bone about the fox's own side-to-side axis (positive swings a
+  // downward bone backward), in its parent's space.
+  const side = new Vector3(), rigQ = new Quaternion();
+  const bend = (bone: Bone, angle: number) => {
+    rig.getWorldQuaternion(rigQ);
+    bone.parent!.getWorldQuaternion(parentQ);
+    side.set(1, 0, 0).applyQuaternion(rigQ).applyQuaternion(parentQ.invert());
+    bone.quaternion.premultiply(turnBy.setFromAxisAngle(side, angle));
+  };
+  const FRONT_BEND = (8 * Math.PI) / 180; // paws a touch ahead of the elbows
+  const HIND_BEND = (12 * Math.PI) / 180; // knee forward, hock back
 
   function pose(dt: number) {
     // Path: a ballistic leap covers the first share, the walk the rest.
@@ -227,6 +238,18 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
     if (still > 0) {
       LEG_BONES.forEach((b, i) => b.quaternion.slerp(legBind[i]!, still));
       hip.position.lerp(hipBind, still);
+      // A relaxed stance, the same on both sides so the paws stay level: soft
+      // shoulders, elbows and wrists in front, the dog-leg knee and hock behind,
+      // with a breath-slow give in the joints.
+      rig.updateMatrixWorld(true);
+      const give = 1 + 0.12 * Math.sin((2 * Math.PI * t) / 3.6);
+      const f = FRONT_BEND * still * give, h = HIND_BEND * still * give;
+      for (const [upper, lower, paw] of [["b_RightUpperArm_06", "b_RightForeArm_07", "b_RightHand_08"], ["b_LeftUpperArm_09", "b_LeftForeArm_010", "b_LeftHand_011"]] as const) {
+        bend(bones[upper]!, f); bend(bones[lower]!, -2 * f); bend(bones[paw]!, f);
+      }
+      for (const [thigh, shin, foot] of [["b_RightLeg01_019", "b_RightLeg02_020", "b_RightFoot01_021"], ["b_LeftLeg01_015", "b_LeftLeg02_016", "b_LeftFoot01_017"]] as const) {
+        bend(bones[thigh]!, h); bend(bones[shin]!, -2 * h); bend(bones[foot]!, h);
+      }
     }
 
     // Idle on top: a breath, a slow tail sway. Then the pointer look.
