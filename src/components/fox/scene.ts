@@ -108,7 +108,13 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   // three's mixer skips writing a bone whose clip value has not changed, so
   // with the idle frame held still our offsets would pile up. They are
   // applied for the render only, then undone.
-  const offsetBones = [neck, head, spine, tail];
+  // The walk flexes paws and hocks hard enough to fold this sculpted body's
+  // paws under and stretch its hind legs; ease them halfway to standing.
+  const DAMP = 0.5;
+  const damped = ["b_RightHand_08", "b_LeftHand_011", "b_RightFoot01_021", "b_LeftFoot01_017", "b_RightFoot02_022", "b_LeftFoot02_018"]
+    .map(name => bones[name]!).filter(Boolean);
+  const offsetBones = [neck, head, spine, tail, ...damped];
+  let standing: Quaternion[] | undefined;
   let base = offsetBones.map(b => b.quaternion.clone());
   const undoOffsets = () => offsetBones.forEach((b, i) => b.quaternion.copy(base[i]!));
 
@@ -159,6 +165,8 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
     survey.timeScale = 0;
     mixer.update(dt);
     base = offsetBones.map(b => b.quaternion.clone());
+    standing ??= damped.map(b => b.quaternion.clone()); // Survey's calm frame, before any stride
+    damped.forEach((b, i) => b.quaternion.slerp(standing![i]!, DAMP));
 
     // Idle on top: a breath, a slow tail sway. Then the pointer look.
     const idle = clamp((t - WALK[1]) / 0.8);

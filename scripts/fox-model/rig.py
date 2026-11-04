@@ -171,6 +171,97 @@ d = nose.co - pivot
 yaw = math.atan2(d.x, -d.y)  # 0 when the nose points along -Y
 print("HEAD yaw deg", round(math.degrees(yaw), 1), "nose", tuple(round(c, 1) for c in nose.co))
 # Turned back at runtime by yawing the spine/neck/head bones (see scene.ts).
+# Legs: bone heat follows the rig's odd bone shapes (the paw bones run up the
+# front of the shin), so whole shins followed the paws and folded. Re-weight
+# each leg by joint height instead, with a short blend at each joint; the top
+# of the leg keeps its blend into the body.
+CHAINS = {
+    "front_r": ["b_RightUpperArm_06", "b_RightForeArm_07", "b_RightHand_08"],
+    "front_l": ["b_LeftUpperArm_09", "b_LeftForeArm_010", "b_LeftHand_011"],
+    "hind_r": ["b_RightLeg01_019", "b_RightLeg02_020", "b_RightFoot01_021"],  # toe bone left out:
+    "hind_l": ["b_LeftLeg01_015", "b_LeftLeg02_016", "b_LeftFoot01_017"],    # paws stay rigid
+}
+BLEND = 3.0
+def joint_z(name):
+    return (arm.matrix_world @ arm.data.bones[name].head_local).z
+# Which leg a vertex belongs to is decided by where it is (side, front/back),
+# not by heat weighting, which mixed up the two hind legs where they sit close.
+all_leg = {gi[n] for c in CHAINS.values() for n in c} | {gi["b_RightFoot02_022"], gi["b_LeftFoot02_018"]}
+mid_y = (K_FRONT_Y + K_HIND_Y) / 2
+def chain_of(co):
+    return ("front_" if co.y < mid_y else "hind_") + ("r" if co.x < 0 else "l")
+# Each leg is a column from its paw (centre of its ground contact) up to its
+# hip or shoulder joint; a vertex is leg only if it sits inside that column.
+ground = [v.co for v in fox.data.vertices if v.co.z < 3]
+paw = {}
+for name in CHAINS:
+    pts = [c for c in ground if chain_of(c) == name]
+    paw[name] = sum(pts, Vector()) / len(pts) if pts else Vector()
+def in_leg(name, co):
+    hip = arm.matrix_world @ arm.data.bones[CHAINS[name][0]].head_local
+    t = max(0.0, min(1.0, co.z / hip.z))
+    axis = paw[name].lerp(hip, t)
+    radius = 7 + 7 * t  # slim at the paw, fuller at the thigh
+    return (co - axis).xy.length < radius
+body_front, body_hind = gi["b_Spine02_03"], gi["b_Hip_01"]
+releg = 0
+for name, chain in CHAINS.items():
+    idx = [gi[n] for n in chain]
+    joints = [joint_z(n) for n in chain]  # top to bottom
+    top = joints[0]
+    for v in fox.data.vertices:
+        share = sum(g.weight for g in v.groups if g.group in all_leg)
+        total = sum(g.weight for g in v.groups) or 1
+        if v.co.z > top - 4 or chain_of(v.co) != name or not any(g.group in all_leg for g in v.groups):
+            continue
+        if not in_leg(name, v.co):
+            # Belly, chest or tail hanging low: follow the body, not the leg.
+            for g in list(v.groups):
+                if g.group in all_leg:
+                    fox.vertex_groups[g.group].remove([v.index])
+            if not v.groups:
+                fox.vertex_groups[body_front if v.co.y < mid_y else body_hind].add([v.index], 1.0, "REPLACE")
+            continue
+        # Which segment by height, blending linearly across each joint below the top.
+        ws = [0.0] * len(chain)
+        k = next((i for i in range(1, len(joints)) if v.co.z >= joints[i]), len(joints)) - 1
+        ws[k] = 1.0
+        if k + 1 < len(joints):
+            d = v.co.z - joints[k + 1]
+            if d < BLEND:
+                t = 0.5 + 0.5 * d / BLEND
+                ws[k], ws[k + 1] = t, 1 - t
+        if k > 0:
+            d = joints[k] - v.co.z
+            if d < BLEND:
+                t = 0.5 + 0.5 * d / BLEND
+                ws[k], ws[k - 1] = t, 1 - t
+        for g in list(v.groups):
+            fox.vertex_groups[g.group].remove([v.index])
+        for i, w_ in zip(idx, ws):
+            if w_ > 0:
+                fox.vertex_groups[i].add([v.index], w_, "REPLACE")
+        releg += 1
+# The tail hangs low just behind the hind paws; heat weighting gave its
+# underside to the hind legs, which dragged it into a blade on every stride.
+# Anything clearly behind the hind legs belongs to the tail.
+leg_idx = {gi[n] for c in CHAINS.values() for n in c}
+tails = [gi[n] for n in ("b_Tail01_012", "b_Tail02_013", "b_Tail03_014")]
+tail_y = [(arm.matrix_world @ arm.data.bones[n].head_local).y for n in ("b_Tail01_012", "b_Tail02_013", "b_Tail03_014")]
+detailed = 0
+for v in fox.data.vertices:
+    if v.co.y < K_HIND_Y + 9 or not any(g.group in leg_idx for g in v.groups):
+        continue
+    for g in list(v.groups):
+        if g.group in leg_idx:
+            fox.vertex_groups[g.group].remove([v.index])
+    if not any(g.group in tails for g in v.groups):
+        k = min(range(3), key=lambda i: abs(v.co.y - tail_y[i]))
+        fox.vertex_groups[tails[k]].add([v.index], 1.0, "REPLACE")
+    detailed += 1
+print("TAIL freed", detailed, "verts from the legs")
+print("LEGS reweighted", releg, "verts; joints", {k: [round(joint_z(n), 1) for n in c] for k, c in CHAINS.items()})
+
 # Keep the head rigid: double the head bone's share wherever it already has a
 # real say (ears included), so the turn does not bend the ears.
 hi = gi["b_Head_05"]
