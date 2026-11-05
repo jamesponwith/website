@@ -192,6 +192,18 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
   };
   const FRONT_BEND = (8 * Math.PI) / 180; // paws a touch ahead of the elbows
   const HIND_BEND = (12 * Math.PI) / 180; // knee forward, hock back
+  // The sculpted hind legs splay out and reach back; gather them in under the
+  // hips so the fox stands compact and ready to move.
+  const HIND_IN = (10 * Math.PI) / 180;
+  const HIND_TUCK = (10 * Math.PI) / 180;
+  // Swing a bone about the fox's own forward axis, in its parent's space.
+  const fwdAx = new Vector3();
+  const roll = (bone: Bone, angle: number) => {
+    rig.getWorldQuaternion(rigQ);
+    bone.parent!.getWorldQuaternion(parentQ);
+    fwdAx.set(0, 0, 1).applyQuaternion(rigQ).applyQuaternion(parentQ.invert());
+    bone.quaternion.premultiply(turnBy.setFromAxisAngle(fwdAx, angle));
+  };
 
   function pose(dt: number) {
     // Path: a ballistic leap covers the first share, the walk the rest.
@@ -248,8 +260,11 @@ export async function startFox(canvas: HTMLCanvasElement, model: string): Promis
         bend(bones[upper]!, f); bend(bones[lower]!, -2 * f); bend(bones[paw]!, f);
       }
       for (const [thigh, shin, foot] of [["b_RightLeg01_019", "b_RightLeg02_020", "b_RightFoot01_021"], ["b_LeftLeg01_015", "b_LeftLeg02_016", "b_LeftFoot01_017"]] as const) {
-        bend(bones[thigh]!, h); bend(bones[shin]!, -2 * h); bend(bones[foot]!, h);
+        bend(bones[thigh]!, h - HIND_TUCK * still); bend(bones[shin]!, -2 * h); bend(bones[foot]!, h);
       }
+      // Hind legs drawn in under the hips (the fox's right is its -X side).
+      roll(bones.b_RightLeg01_019!, HIND_IN * still);
+      roll(bones.b_LeftLeg01_015!, -HIND_IN * still);
     }
 
     // Idle on top: a breath, a slow tail sway. Then the pointer look.

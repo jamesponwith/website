@@ -108,6 +108,45 @@ def fix_ear(obj, ear_frac=0.17, sink=2.5):
     print("EAR fixed: removed", len(bad), "verts, mirrored", len(good_faces), "faces; base z", round(base, 1))
 fix_ear(fox)
 
+# 3c. The sculpt has its right hind leg stepping back at an angle while the
+# skeleton's leg is upright, so on each stride that leg fanned into a panel.
+# Stand it up: rotate it forward about the hip until its paw matches the left
+# one's offset from the hip, fading to nothing at the hip so the haunch holds.
+def stand_hind_right(obj):
+    me = obj.data
+    hipR = arm.matrix_world @ arm.data.bones["b_RightLeg01_019"].head_local
+    hip_y, hip_z = hipR.y, hipR.z - 4
+    def paw_of(sign):
+        near = [v.co for v in me.vertices if v.co.x * sign > 2 and v.co.z < 12 and abs(v.co.y - hip_y) < 18]
+        floor = min(c.z for c in near)
+        pts = [c for c in near if c.z < floor + 3]
+        return sum(pts, Vector()) / len(pts)
+    pr, pl = paw_of(-1), paw_of(1)
+    want = math.atan2(pl.y - hip_y, hip_z - pl.z)  # left leg's lean, + = paw behind hip
+    have = math.atan2(pr.y - hip_y, hip_z - pr.z)
+    turn = want - have
+    moved = 0
+    sm = lambda x: (lambda t: t * t * (3 - 2 * t))(max(0.0, min(1.0, x)))
+    for v in me.vertices:
+        c = v.co
+        if c.z > hip_z:
+            continue
+        t = max(0.0, min(1.0, (hip_z - c.z) / (hip_z - pr.z)))
+        line_y = hip_y + (pr.y - hip_y) * t
+        # Soft masks on every side, so the surface bends instead of tearing:
+        k = sm((hip_z - c.z) / 16)               # fades in below the hip
+        k *= sm((-c.x - 1.0) / 5.0)              # right side only, easing across the midline
+        k *= sm((18 - abs(c.y - line_y)) / 8.0)  # along the leg, easing off toward belly and tail
+        if k <= 0:
+            continue
+        a = turn * k
+        dy, dz = c.y - hip_y, c.z - hip_z
+        c.y = hip_y + dy * math.cos(a) - dz * math.sin(a)
+        c.z = hip_z + dy * math.sin(a) + dz * math.cos(a)
+        moved += 1
+    print("HIND_R stood up by", round(math.degrees(turn), 1), "deg;", moved, "verts; paw was", tuple(round(x, 1) for x in pr), "left", tuple(round(x, 1) for x in pl))
+stand_hind_right(fox)
+
 # 4. Fit the skeleton to the new body: vertical scale from back height, lateral from paw spread.
 def back_height(o, y0, y1):
     return max(v.z for v in world_verts(o) if y0 < v.y < y1)
@@ -192,11 +231,17 @@ def chain_of(co):
     return ("front_" if co.y < mid_y else "hind_") + ("r" if co.x < 0 else "l")
 # Each leg is a column from its paw (centre of its ground contact) up to its
 # hip or shoulder joint; a vertex is leg only if it sits inside that column.
-ground = [v.co for v in fox.data.vertices if v.co.z < 3]
+# Each paw from its own lowest points: a paw that floats above the floor (one
+# hind paw sits ~2 units up in the generated mesh) still gets the right centre.
+# The tail tip can hang low behind the hind paws, so search only near them.
 paw = {}
 for name in CHAINS:
-    pts = [c for c in ground if chain_of(c) == name]
-    paw[name] = sum(pts, Vector()) / len(pts) if pts else Vector()
+    hip = arm.matrix_world @ arm.data.bones[CHAINS[name][0]].head_local
+    near = [v.co for v in fox.data.vertices if chain_of(v.co) == name and v.co.z < 12 and abs(v.co.y - hip.y) < 18]
+    floor = min(c.z for c in near)
+    pts = [c for c in near if c.z < floor + 3]
+    paw[name] = sum(pts, Vector()) / len(pts)
+print("PAWS", {k: tuple(round(x, 1) for x in v) for k, v in paw.items()})
 def in_leg(name, co):
     hip = arm.matrix_world @ arm.data.bones[CHAINS[name][0]].head_local
     t = max(0.0, min(1.0, co.z / hip.z))
@@ -252,6 +297,8 @@ detailed = 0
 for v in fox.data.vertices:
     if v.co.y < K_HIND_Y + 9 or not any(g.group in leg_idx for g in v.groups):
         continue
+    if in_leg(chain_of(v.co), v.co):
+        continue  # a hind leg that steps back is still leg, not tail
     for g in list(v.groups):
         if g.group in leg_idx:
             fox.vertex_groups[g.group].remove([v.index])
@@ -273,6 +320,19 @@ for name in CHAINS:
         f = 1.0 if v.co.z < 6 else max(0.0, (20 - v.co.z) / 14)
         v.co.z -= lift * f
 print("SOLES grounded (was)", soles)
+# The low tail and the hind legs are fused into one surface in the generated
+# mesh, so a striding leg stretched a sheet out of it. Cut every face that
+# joins a vertex led by a hind-leg bone to one led by a tail bone.
+hind_bones = {gi[n] for k, c in CHAINS.items() if k.startswith("hind") for n in c}
+tail_bones = {gi[n] for n in ("b_Tail01_012", "b_Tail02_013", "b_Tail03_014")}
+def leader(v):
+    return max(v.groups, key=lambda g: g.weight).group if v.groups else None
+lead = [leader(v) for v in fox.data.vertices]
+bm = bmesh.new(); bm.from_mesh(fox.data); bm.faces.ensure_lookup_table()
+seams = [f for f in bm.faces if any(lead[v.index] in hind_bones for v in f.verts) and any(lead[v.index] in tail_bones for v in f.verts)]
+bmesh.ops.delete(bm, geom=seams, context="FACES_ONLY")
+bm.to_mesh(fox.data); bm.free(); fox.data.update()
+print("TAIL cut from hind legs:", len(seams), "faces")
 print("LEGS reweighted", releg, "verts; joints", {k: [round(joint_z(n), 1) for n in c] for k, c in CHAINS.items()})
 
 # Keep the head rigid: double the head bone's share wherever it already has a
