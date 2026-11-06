@@ -87,6 +87,9 @@ export default defineConfig({
   // archive is the pre-reset tree on GitHub.
   redirects: {
     "/quickstart": "/getting-started",
+    // docs.phux.sh/build-on. The worker answers this with a 301; this HTML
+    // redirect is the fallback on hosts that do not run that rule.
+    "/build-on": "/building",
     "/quickstart/install": "/installation",
     "/quickstart/config": "/config",
     "/concepts/when-to-use": compare ?? "/concepts",

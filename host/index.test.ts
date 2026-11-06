@@ -111,6 +111,19 @@ describe("markdown negotiation", () => {
     expect(response.headers.get("content-type")).toBe("application/x-sh");
   });
 
+  test("docs.phux.sh/build-on redirects before assets are fetched", async () => {
+    const response = await handler.fetch(
+      new Request("https://docs.phux.sh/build-on?from=search", {
+        headers: { accept: "text/html" },
+      }),
+      { ASSETS: { fetch: async () => { throw new Error("build-on must not fetch assets"); } } },
+    );
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe(
+      "https://docs.phux.sh/building?from=search",
+    );
+  });
+
   test("docs.phux.sh/quickstart redirects before assets are fetched", async () => {
     const response = await handler.fetch(
       new Request("https://docs.phux.sh/quickstart?from=search", {

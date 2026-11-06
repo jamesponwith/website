@@ -170,6 +170,19 @@ export async function verifyCrawlMetadata(
   }
   const overview = await readFile(resolve(root, "overview.html"), "utf8");
   assert.match(overview, /<title>Documentation overview — phux<\/title>/, "overview title names the page");
+  const building = await readFile(resolve(root, "building.html"), "utf8");
+  const buildingTitle = "Build on phux: JSON CLI, MCP, wire protocol, OSC 7501 and plugins";
+  const buildingDescription = "Entry points for a program that drives a phux server or reports status into a pane: JSON CLI, MCP, the wire protocol, OSC 7501, and plugins.";
+  assert.ok(building.includes(`<title>${buildingTitle}</title>`), "building title names the surfaces that exist");
+  assert.ok(building.includes(`<meta property="og:title" content="${buildingTitle}"`));
+  assert.ok(building.includes(`<meta name="twitter:title" content="${buildingTitle}"`));
+  assert.ok(building.includes(`<meta name="description" content="${buildingDescription}"`));
+  assert.doesNotMatch(buildingTitle + buildingDescription, /SDK|multi-client|hooks/i);
+  const libghostty = await readFile(resolve(root, "libghostty.html"), "utf8");
+  const libghosttyTitle = "A terminal multiplexer built on libghostty — phux";
+  assert.ok(libghostty.includes(`<title>${libghosttyTitle}</title>`), "libghostty title names the multiplexer");
+  assert.ok(libghostty.includes(`<meta property="og:title" content="${libghosttyTitle}"`));
+  assert.ok(libghostty.includes(`<meta name="twitter:title" content="${libghosttyTitle}"`));
   const env = { ASSETS: { fetch: asset } };
   const docsIndexResponse = await handler.fetch(new Request(`https://${DOCS_HOST}/sitemap-index.xml`), env);
   assert.equal(docsIndexResponse.status, 200);

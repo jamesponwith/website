@@ -13,6 +13,7 @@ import { join } from "node:path";
 export const GATED_LLMS_PAGES = [
   { pathname: "/building", html: "building.html" },
   { pathname: "/any-program-status", html: "any-program-status.html" },
+  { pathname: "/libghostty", html: "libghostty.html" },
 ] as const;
 
 const gatedHtml = new Map<string, string>(GATED_LLMS_PAGES.map((page) => [page.pathname, page.html]));

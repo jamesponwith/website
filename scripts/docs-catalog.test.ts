@@ -143,7 +143,8 @@ describe("documentation discovery interface", () => {
       slug: "building",
       group: "build",
       order: -1,
-      title: "Build on phux",
+      title: "Build on phux: JSON CLI, MCP, wire protocol, OSC 7501 and plugins",
+      description: "Entry points for a program that drives a phux server or reports status into a pane: JSON CLI, MCP, the wire protocol, OSC 7501, and plugins.",
     });
     expect(entries.find(({ slug }) => slug === "any-program-status")).toMatchObject({
       repoPath: "docs/any-program-status.md",
@@ -164,7 +165,10 @@ describe("documentation discovery interface", () => {
     expect(pages.indexOf("program-protocol")).toBe(pages.indexOf("any-program-status") + 1);
     expect(pages.indexOf("protocol")).toBeGreaterThan(pages.indexOf("building"));
     const guide = await readFile(join(out, "building.md"), "utf8");
-    expect(guide).toContain('title: "Build on phux"');
+    expect(guide).toContain('title: "Build on phux: JSON CLI, MCP, wire protocol, OSC 7501 and plugins"');
+    expect(guide).toContain('description: "Entry points for a program that drives a phux server or reports status into a pane: JSON CLI, MCP, the wire protocol, OSC 7501, and plugins."');
+    expect(guide).toContain('summary: "Programs that drive a phux server start here."');
+    expect(guide).not.toMatch(/SDK|multi-client|hooks edge/i);
     expect(guide).toContain('sourcePath: "docs/building.md"');
     const status = await readFile(join(out, "any-program-status.md"), "utf8");
     expect(status).toContain('title: "Any program can report status"');
@@ -183,6 +187,8 @@ describe("documentation discovery interface", () => {
       repoPath: "docs/libghostty.md",
       slug: "libghostty",
       group: "internals",
+      order: 0.5,
+      title: "A terminal multiplexer built on libghostty — phux",
     });
     const out = join(state.root, "out");
     await mkdir(out);
@@ -191,6 +197,10 @@ describe("documentation discovery interface", () => {
     expect(pages.indexOf("architecture")).toBeGreaterThan(-1);
     expect(pages.indexOf("libghostty")).toBe(pages.indexOf("architecture") + 1);
     expect(pages.indexOf("decisions")).toBe(pages.indexOf("libghostty") + 1);
+    const page = await readFile(join(out, "libghostty.md"), "utf8");
+    expect(page).toContain('title: "A terminal multiplexer built on libghostty — phux"');
+    expect(page).toContain('summary: "The terminal engine phux renders with."');
+    expect(page).not.toMatch(/\bSDK\b/);
   });
 
   test("syncs when neither new docs page is in the phux checkout yet", async () => {
@@ -257,7 +267,11 @@ describe("documentation discovery interface", () => {
     const { entries } = await discover(state.docs);
     expect(entries.find(({ slug }) => slug === "public-api")).toMatchObject({ group: "automate", order: -0.5 });
     expect(entries.find(({ slug }) => slug === "any-program-status")).toMatchObject({ group: "build", order: -0.5, title: "Any program can report status" });
-    expect(entries.find(({ slug }) => slug === "libghostty")).toMatchObject({ group: "internals", order: 0.5 });
+    expect(entries.find(({ slug }) => slug === "libghostty")).toMatchObject({
+      group: "internals",
+      order: 0.5,
+      title: "A terminal multiplexer built on libghostty — phux",
+    });
     expect(entries.some(({ slug }) => slug === "building")).toBe(false);
   });
 

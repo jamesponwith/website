@@ -80,6 +80,7 @@ npx skills add no-phux/skills                    # agent skills
 - [Command reference](https://docs.phux.sh/reference/cli): generated CLI documentation.
 - [Server protocol](https://docs.phux.sh/protocol): how a client talks to a phux server in length-prefixed frames, with the handshake, capabilities, and the 1.x compatibility rule.
 - [Architecture](https://docs.phux.sh/architecture): implementation and contributor reference.
+- [A terminal multiplexer built on libghostty](https://docs.phux.sh/libghostty)
 - [Historical decisions](https://github.com/no-phux/phux/tree/d21db2e345aeaff43a681b3a04dfd43f2cc082ca/docs/adr): immutable rationale archive, not current behavior. Live constraints and lookup commands are in Architecture.
 
 ## Programs and plugins

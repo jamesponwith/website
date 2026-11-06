@@ -167,21 +167,28 @@ function pageSummary(entry: Entry, body: string): string {
 
 function pageMetadata(raw: string, entry: Entry) {
   const { body, meta } = parseFrontmatter(raw);
-  return { body, title: pageTitle(entry, body), summary: pageSummary(entry, body), stability: schemaStability(meta) };
+  const summary = pageSummary(entry, body);
+  return {
+    body,
+    title: pageTitle(entry, body),
+    summary,
+    description: entry.description ?? deriveDescription(summary),
+    stability: schemaStability(meta),
+  };
 }
 
 /** Render with fixed source provenance; entries supply the hosted-link catalog. */
 export function createPageRenderer(entries: Entry[], revision: string, versions: Versions) {
   const rewriteLinks = createLinkRewriter(entries, revision);
   return function renderSourcePage(raw: string, entry: Entry): string {
-    const { body, title, summary, stability } = pageMetadata(raw, entry);
+    const { body, title, summary, description, stability } = pageMetadata(raw, entry);
     const extended = entry.repoPath === "docs/compare.md" ? extendComparePage(body, revision) : body;
     const sourceMtime = sourceCommitDate(entry.abs);
     const fm = [
       "---",
       `title: ${yamlString(title)}`,
       `summary: ${yamlString(summary)}`,
-      `description: ${yamlString(deriveDescription(summary))}`,
+      `description: ${yamlString(description)}`,
       `group: ${yamlString(GROUPS[entry.group])}`,
       `order: ${entry.order}`,
       `sourcePath: ${yamlString(entry.repoPath)}`,
