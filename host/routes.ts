@@ -163,6 +163,12 @@ export function isEmbedPath(pathname: string): boolean {
   return path === "/embed" || path.startsWith("/embed/");
 }
 
+/** Pairing Universal Link. The page is noindex; the URL can carry a bearer token. */
+export function isConnectPath(pathname: string): boolean {
+  const path = stripPageSuffix(pathname);
+  return path === "/connect" || path === "/connect/";
+}
+
 export function isVgpuConceptPath(pathname: string): boolean {
   const path = stripPageSuffix(pathname);
   return path === "/concepts/vgpu" || path.startsWith("/concepts/vgpu/");

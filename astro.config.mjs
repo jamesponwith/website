@@ -13,7 +13,7 @@ import {
   remarkNpm,
 } from "fumadocs-core/mdx-plugins";
 import { buildSearchIndex } from "./scripts/build-search.mjs";
-import { isDocsPath, isEmbedPath, isVgpuConceptPath } from "./host/routes.ts";
+import { isConnectPath, isDocsPath, isEmbedPath, isVgpuConceptPath } from "./host/routes.ts";
 import { publishLlmsTxt } from "./scripts/publish-llms.ts";
 import { splitDocsSitemap } from "./scripts/split-sitemaps.ts";
 import { pageLastmods } from "./scripts/sitemap-lastmod.ts";
@@ -163,7 +163,7 @@ export default defineConfig({
     react(),
     mdx({ extendMarkdownConfig: true, syntaxHighlight: false }),
     sitemap({
-      filter: (page) => !isEmbedPath(new URL(page).pathname) && !isVgpuConceptPath(new URL(page).pathname),
+      filter: (page) => !isEmbedPath(new URL(page).pathname) && !isVgpuConceptPath(new URL(page).pathname) && !isConnectPath(new URL(page).pathname),
       serialize(item) {
         const url = new URL(item.url);
         const docs = isDocsPath(url.pathname);

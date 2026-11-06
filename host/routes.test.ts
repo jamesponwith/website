@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   DOCS_HOST,
   SITE_HOST,
+  isConnectPath,
   isDocsHost,
   isDocsPath,
   isMarketingOnlyPath,
@@ -282,5 +284,21 @@ describe("published documentation boundaries", () => {
         kind: "redirect", location: `https://${SITE_HOST}${path}`, status: 301,
       });
     }
+  });
+});
+
+describe("sitemap exclusions", () => {
+  test("keeps the noindex pairing page out of the sitemap", () => {
+    for (const path of ["/connect", "/connect/", "/connect.html", "/connect/index.html", "/connect.md"]) {
+      expect(isConnectPath(path)).toBe(true);
+    }
+    for (const path of ["/", "/connection", "/connect-old", "/concepts/connect", "/embed", "/concepts/vgpu"]) {
+      expect(isConnectPath(path)).toBe(false);
+    }
+    const filter = readFileSync(new URL("../astro.config.mjs", import.meta.url), "utf8")
+      .match(/filter: \(page\) => ([^\n]+)/)?.[1];
+    expect(filter).toContain("!isEmbedPath(new URL(page).pathname)");
+    expect(filter).toContain("!isVgpuConceptPath(new URL(page).pathname)");
+    expect(filter).toContain("!isConnectPath(new URL(page).pathname)");
   });
 });
