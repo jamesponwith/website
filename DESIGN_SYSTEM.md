@@ -41,10 +41,10 @@ portalled search dialog. Head theme colors match the two paper colors.
 | Token (`--color-`) | Light | Dark | Use |
 |---|---|---|---|
 | `bg` | `#f5f5f3` | `#121311` | paper |
-| `fg` | `#1b1c19` | `#ebebe7` | ink: body, titles, active position |
-| `nav` | `#3a3b36` | `#cfd0ca` | sidebar links |
-| `muted` (also `dim`) | `#55564f` | `#b0b1aa` | lead, table cells, secondary text |
-| `subtle` | `#686963` | `#92938c` | group labels, outline, meta, icons |
+| `fg` | `#121310` | `#ebebe7` | ink: body, titles, active position |
+| `nav` | `#2c2d29` | `#cfd0ca` | sidebar links |
+| `muted` (also `dim`) | `#44453f` | `#b0b1aa` | lead, table cells, secondary text |
+| `subtle` | `#575852` | `#92938c` | group labels, outline, meta, icons |
 | `faint` | `#c9c9c5` | `#3b3c38` | outline branch lines (non-text) |
 | `rule` | ink at 12% | ink at 13% | panel borders, header rules |
 | `rule-faint` | ink at 7% | ink at 7% | table row separators |

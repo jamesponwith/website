@@ -48,8 +48,8 @@ export const GET: APIRoute = async ({ props }) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="#f5f5f3"/>
 
-  <text x="${PAD + 60}" y="${PAD + 18}" font-family="${SANS}" font-size="28" fill="#1b1c19" font-weight="600">${xml(SITE.name)}<tspan dx="9" fill="#6b6c66" font-weight="400">docs</tspan></text>
-  <text x="${PAD}" y="${titleY}" font-family="${SANS}" font-size="68" fill="#1b1c19" font-weight="500" letter-spacing="-1.4">${tspans(title, PAD, 78)}</text>
+  <text x="${PAD + 60}" y="${PAD + 18}" font-family="${SANS}" font-size="28" fill="#121310" font-weight="600">${xml(SITE.name)}<tspan dx="9" fill="#6b6c66" font-weight="400">docs</tspan></text>
+  <text x="${PAD}" y="${titleY}" font-family="${SANS}" font-size="68" fill="#121310" font-weight="500" letter-spacing="-1.4">${tspans(title, PAD, 78)}</text>
   <text x="${PAD}" y="${summaryY}" font-family="${SANS}" font-size="30" fill="#5d5e58">${tspans(summary, PAD, 42)}</text>
   <path d="M${PAD} ${H - PAD - 34}H${W - PAD}" stroke="#1b1c19" stroke-opacity="0.12" stroke-width="2"/>
   <text x="${PAD}" y="${H - PAD + 6}" font-family="${MONO}" font-size="24" fill="#6b6c66">${xml(`${SITE.docsDomain}/${page.id}`)}</text>

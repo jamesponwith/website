@@ -13,11 +13,11 @@ html[data-design="reader"] {
   --font-mono: var(--font-code);
 
   --color-bg: #f5f5f3; /* paper */
-  --color-fg: #1b1c19; /* ink */
-  --color-nav: #3a3b36; /* sidebar links */
-  --color-muted: #55564f; /* secondary text */
+  --color-fg: #121310; /* ink */
+  --color-nav: #2c2d29; /* sidebar links */
+  --color-muted: #44453f; /* secondary text */
   --color-dim: var(--color-muted);
-  --color-subtle: #686963; /* labels, meta */
+  --color-subtle: #575852; /* labels, meta */
   --color-faint: #c9c9c5; /* outline branches */
   --color-rule: rgb(27 28 25 / 12%);
   --color-rule-faint: rgb(27 28 25 / 7%);
