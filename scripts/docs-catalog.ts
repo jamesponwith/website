@@ -99,6 +99,7 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "troubleshooting.md", slug: "troubleshooting", group: "help", order: 0 },
   { file: "architecture.md", slug: "architecture", group: "internals", order: 0 },
   { file: "resource-kinds.md", slug: "resource-kinds", group: "internals", order: 0.25 },
+  { file: "authority.md", slug: "authority", group: "internals", order: 0.27, title: "Authority over pages, windows, and displays" },
   { file: "applications.md", slug: "applications", group: "internals", order: 0.3, title: "Applications as resources" },
   { file: "libghostty.md", slug: "libghostty", group: "internals", order: 0.5, title: "A terminal multiplexer built on libghostty — phux" },
   { file: "decisions.md", slug: "decisions", group: "internals", order: 1 },
