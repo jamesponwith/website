@@ -7,7 +7,7 @@
  * (host/mcp.ts), answers agent docs search at /search.json (host/search.ts),
  * records passive aggregate telemetry (host/telemetry.ts),
  * serves the public telemetry dashboard API at /api/telemetry, redirects
- * /download/desktop to the stable Desktop archive (host/download.ts), and springs
+ * /download/rune to the Phux Rune download (host/download.ts), and springs
  * tripwire traps on hostile-bait paths (host/tripwire-paths.ts →
  * host/tripwire.ts).
  */
@@ -109,17 +109,10 @@ export default {
       return iosDownload(request, env, undefined, undefined, ctx);
     }
 
-    // The Desktop download button: the stable Mac archive, resolved per click.
-    if (url.pathname === "/download/desktop") {
-      const { desktopDownload } = await import("./download");
-      const response = await desktopDownload();
-      recordEvents(env.TELEMETRY, ctx, classifyRequest(request, response));
-      observe(env, ctx, request, response);
-      return response;
-    }
-
-    // The Phux Rune archive for Apple-silicon Macs, resolved per click.
-    if (url.pathname === "/download/rune") {
+    // Download for Mac: the Phux Rune DMG for Apple-silicon Macs, resolved per
+    // click. /download/desktop is the retired GPUI Desktop's link; Rune
+    // replaced it.
+    if (url.pathname === "/download/rune" || url.pathname === "/download/desktop") {
       const { runeDownload } = await import("./download");
       const response = await runeDownload();
       recordEvents(env.TELEMETRY, ctx, classifyRequest(request, response));

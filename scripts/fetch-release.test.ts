@@ -281,4 +281,13 @@ describe("latestRuneRelease", () => {
       ]),
     ).toEqual({ tag: "rune-v0.1.0-alpha.10", url: "https://example.test/a10", publishedAt: "2026-11-04T10:00:00Z" });
   });
+
+  test("a final release sorts after its alphas, and patches count on from it", () => {
+    const alpha = { tag_name: "rune-v0.1.0-alpha.23", prerelease: true };
+    const final = { tag_name: "rune-v0.1.0", html_url: "https://example.test/010" };
+    expect(latestRuneRelease([alpha, final])?.tag).toBe("rune-v0.1.0");
+    expect(latestRuneRelease([final, alpha])?.tag).toBe("rune-v0.1.0");
+    expect(latestRuneRelease([alpha, final, { tag_name: "rune-v0.1.1" }])?.tag).toBe("rune-v0.1.1");
+    expect(latestRuneRelease([{ tag_name: "rune-v0.1.0-beta.1" }, { tag_name: "rune-v0.1" }])).toBeNull();
+  });
 });

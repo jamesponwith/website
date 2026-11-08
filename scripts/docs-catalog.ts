@@ -79,10 +79,6 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "acp.md", slug: "acp", group: "automate", order: 3 },
   { file: "remote.md", slug: "remote", group: "connect", order: 0 },
   { file: "clients.md", slug: "clients", group: "connect", order: 1 },
-  { file: "desktop-capture.md", slug: "desktop-capture", group: "connect", order: 2 },
-  { file: "desktop-changes.md", slug: "desktop-changes", group: "connect", order: 3 },
-  { file: "desktop-panes.md", slug: "desktop-panes", group: "connect", order: 4 },
-  { file: "desktop-reviews.md", slug: "desktop-reviews", group: "connect", order: 5 },
   // Hub for driving phux. A checkout without the file skips it.
   {
     file: "building.md",

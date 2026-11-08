@@ -160,7 +160,7 @@ async function verifyPublishedContent() {
   assert.ok(pages.some(({ url }) => url === "/organization"), "organization: published and MCP-indexed");
   assert.ok(!pages.some(({ url }) => url === "/substrate"), "substrate: internal record stays unpublished");
   assert.ok(pages.some(({ url }) => url === "/acp"), "ACP: published and MCP-indexed");
-  for (const slug of ["embedding", "desktop-capture", "desktop-changes", "desktop-panes"]) {
+  for (const slug of ["embedding"]) {
     assert.ok(pages.some(({ url }) => url === `/${slug}`), `${slug}: published and MCP-indexed`);
     assert.ok(clients.includes(`](/${slug}`), `${slug}: discoverable from Clients`);
   }
@@ -242,7 +242,7 @@ try {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: `${artifacts}/overview-${theme}.png`, fullPage: true });
   }
-  for (const slug of ["desktop-capture", "desktop-changes", "desktop-panes", "embedding"]) {
+  for (const slug of ["embedding"]) {
     await page.goto(`${base}/clients`);
     await page.locator(`main a[href="/${slug}"]`).first().click();
     await page.waitForURL(`${base}/${slug}`);

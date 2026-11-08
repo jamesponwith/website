@@ -281,7 +281,7 @@ describe("public concept gallery", () => {
 
 describe("published documentation boundaries", () => {
   test("flat task guides and installation stay on the docs host for every page suffix", () => {
-    for (const page of ["acp", "embedding", "desktop-capture", "desktop-changes", "desktop-panes", "organization", "installation", "substrate", "public-api", "building", "any-program-status", "program-protocol", "program-sequences", "host-services", "pane-command", "agent-waiting", "terminal-mcp", "tailscale", "agent-quickstart", "libghostty"]) {
+    for (const page of ["acp", "embedding", "organization", "installation", "substrate", "public-api", "building", "any-program-status", "program-protocol", "program-sequences", "host-services", "pane-command", "agent-waiting", "terminal-mcp", "tailscale", "agent-quickstart", "libghostty"]) {
       for (const suffix of ["", "/", ".html", ".md", "/index.html"]) {
         const path = `/${page}${suffix}`;
         expect(isDocsPath(path)).toBe(true);

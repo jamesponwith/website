@@ -16,7 +16,7 @@ describe("documentation discovery interface", () => {
     expect(comparison.summary).toBeUndefined();
   });
   test("keeps canonical flat guides and ignores the historical archive", async () => {
-    const guides = ["embedding", "organization", "desktop-capture", "desktop-changes", "desktop-panes"];
+    const guides = ["embedding", "organization"];
     for (const guide of guides) await source(`${guide}.md`);
     await source("install.md");
     await source("README.md");

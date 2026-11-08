@@ -22,8 +22,8 @@ export const installActions: Record<InstallPlatform, InstallAction> = {
   iphone: { ...ios, label: "Get for iPhone" },
   ipad: { ...ios, label: "Get for iPad", note: "iPadOS beta · Join in TestFlight" },
   android: { label: "Get for Android", href: "/more#testflight", note: "Android beta · Google Play access by email", icon: "→", target: "mobile", phone: "android" },
-  mac: { label: "Download for Mac", href: runeDownload, note: "Rune alpha · Apple silicon · macOS 14 or later · Apache-2.0 · No account", icon: "↓" },
-  linux: { label: "Install for Linux", href: docsHref("/installation"), note: "Linux · CLI and Rune alpha · Apache-2.0 · No account", icon: "→", target: "cli" },
+  mac: { label: "Download for Mac", href: runeDownload, note: "Phux Rune · Apple silicon · macOS 14 or later · Apache-2.0 · No account", icon: "↓" },
+  linux: { label: "Install for Linux", href: docsHref("/installation"), note: "Linux · CLI and Phux Rune · Apache-2.0 · No account", icon: "→", target: "cli" },
   windows: { label: "Install for Windows", href: docsHref("/installation"), note: "Native desktop · WSL 2 server required · CLI in WSL 2", icon: "↗" },
   unknown: { label: "Choose your platform", href: docsHref("/installation"), note: "Mac, Linux & Windows · Mobile beta available", icon: "↗" },
 };

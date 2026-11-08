@@ -45,20 +45,25 @@ function newerVersion(version: bigint[], previous: bigint[] | null): boolean {
   return false;
 }
 
+// A capture group the tag left out (Rune's alpha number on a final release)
+// sorts above every number it could have held: 0.1.0 follows its alphas.
+const FINAL = 1n << 64n;
+
 function releaseVersion(
   release: GitHubRelease,
   tagPattern: RegExp,
-  prerelease: boolean,
+  prerelease: boolean | null,
 ): bigint[] | null {
-  if (release.draft || Boolean(release.prerelease) !== prerelease) return null;
+  if (release.draft) return null;
+  if (prerelease !== null && Boolean(release.prerelease) !== prerelease) return null;
   const match = tagPattern.exec(release.tag_name ?? "");
-  return match ? match.slice(1).map((part) => BigInt(part)) : null;
+  return match ? match.slice(1).map((part) => (part === undefined ? FINAL : BigInt(part))) : null;
 }
 
 function latestRelease(
   list: GitHubRelease[],
   tagPattern: RegExp,
-  prerelease = false,
+  prerelease: boolean | null = false,
 ): Release | null {
   let latest: GitHubRelease | null = null;
   let latestVersion: bigint[] | null = null;
@@ -91,8 +96,9 @@ export function latestDesktopRelease(list: GitHubRelease[]): Release | null {
 }
 
 export function latestRuneRelease(list: GitHubRelease[]): Release | null {
-  // Rune, the alpha client, ships prereleases tagged rune-vX.Y.Z-alpha.N.
-  return latestRelease(list, /^rune-v(\d+)\.(\d+)\.(\d+)-alpha\.(\d+)$/, true);
+  // Rune shipped rune-vX.Y.Z-alpha.N prereleases, then rune-vX.Y.Z releases
+  // from 0.1.0; a release sorts after its alphas.
+  return latestRelease(list, /^rune-v(\d+)\.(\d+)\.(\d+)(?:-alpha\.(\d+))?$/, null);
 }
 
 interface StampedReleases {

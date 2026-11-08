@@ -140,7 +140,7 @@ methodology link. Do not hide conditions behind tooltips.
 The landing at `src/pages/index.astro` stays minimal: a short top bar, an
 outcome-led headline with a direct live-demo link, one product tour with its
 sandbox invitation, a short delegate/unblock/review loop, and the floating CLI / Desktop
-install switcher below the tour. Desktop is a download (`/download/desktop`, with the curl
+install switcher below the tour. Desktop is the Phux Rune DMG (`/download/rune`, with the curl
 installer as the alternative). Desktop and terminal installs name their actual
 platform requirements, including the native Windows client's WSL 2 coordinator.
 Phone browsers retain TestFlight/Android beta access rather than a Mac download.

@@ -35,6 +35,6 @@ export async function verifyHomeContent(page: Page) {
   assert.equal(await page.locator('meta[name="description"]').getAttribute("content"), HOME.description);
   assert.equal(await page.locator('meta[property="og:description"]').getAttribute("content"), HOME.description);
   assert.equal(await page.locator('meta[name="twitter:description"]').getAttribute("content"), HOME.description);
-  assert.equal((await page.locator(".download-note").innerText()).trim(), "Rune alpha · Apple silicon · macOS 14 or later · Apache-2.0 · No account");
+  assert.equal((await page.locator(".download-note").innerText()).trim(), "Phux Rune · Apple silicon · macOS 14 or later · Apache-2.0 · No account");
   assert.equal(await page.locator(".cli-requirement").count(), 0);
 }
