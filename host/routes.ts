@@ -7,6 +7,8 @@
  * Pure functions so unit tests do not need a Cloudflare runtime.
  */
 
+import { WORKER_DOC_ALIASES, docsRedirects } from "./docs-redirects";
+
 export const SITE_HOST = "phux.sh";
 export const DOCS_HOST = "docs.phux.sh";
 export const SITE_ALIASES = ["phux.computer", "www.phux.computer"] as const;
@@ -68,6 +70,7 @@ export const DOCS_PREFIXES = [
   "/substrate",
   // Pre-2026-10 docs URLs. Nested paths still use Astro's HTML redirects.
   // /quickstart itself is a worker 301 onto /getting-started.
+  // A missing `<path>.md` for one of these aliases 301s to the canonical twin.
   "/quickstart",
   "/consumers",
   "/remote-access",
@@ -110,6 +113,20 @@ export function isDocsPath(pathname: string): boolean {
   return DOCS_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
+/** One lowercase `.md` suffix on a single-slash docs path. Encoded or doubled suffixes are not aliases. */
+const LITERAL_MARKDOWN_PATH = /^\/(?:[a-z0-9-]+\/)*[a-z0-9-]+\.md$/;
+
+/**
+ * Extensionless path for a docs-host `*.md` request that names a documentation
+ * route. Catalog twins are built by `src/pages/[...slug].md.ts`.
+ */
+export function markdownFallbackPath(host: string, pathname: string): string | undefined {
+  if (!isDocsHost(host) || !LITERAL_MARKDOWN_PATH.test(pathname)) return undefined;
+  const path = pathname.slice(0, -".md".length);
+  if (!isDocsPath(path) || isMarketingOnlyPath(path)) return undefined;
+  return path;
+}
+
 export function isMarketingOnlyPath(pathname: string): boolean {
   const path = stripPageSuffix(pathname);
   return isVgpuConceptPath(path) || isEmbedPath(path) ||
@@ -138,15 +155,11 @@ export function routeRequest(host: string, url: URL): HostRoute {
     if (path === "/" || path === "/index.html" || path === "") {
       return redirectOn(DOCS_HOST, "/overview", url.search);
     }
-    // Astro emits /quickstart as a 200 meta-refresh. Answer the retired URL
-    // with a real permanent redirect before that page can be served.
-    if (isRetiredQuickstartPage(path)) {
-      return redirectOn(DOCS_HOST, "/getting-started", url.search);
-    }
-    // Astro emits /build-on as a 200 meta-refresh. Answer the alias with a
-    // real permanent redirect before that page can be served.
-    if (isBuildOnAlias(path)) {
-      return redirectOn(DOCS_HOST, "/building", url.search);
+    // Astro emits these two as 200 meta-refresh pages. The target comes from
+    // the same redirect map the HTML build uses.
+    const aliasTarget = workerHtmlAliasTarget(path);
+    if (aliasTarget) {
+      return redirectOn(DOCS_HOST, aliasTarget, url.search);
     }
     if (isMarketingOnlyPath(path)) {
       return redirectOn(SITE_HOST, path, url.search);
@@ -179,22 +192,20 @@ export function isVgpuConceptPath(pathname: string): boolean {
   return path === "/concepts/vgpu" || path.startsWith("/concepts/vgpu/");
 }
 
-function isBuildOnAlias(pathname: string): boolean {
-  return (
-    pathname === "/build-on" ||
-    pathname === "/build-on/" ||
-    pathname === "/build-on.html" ||
-    pathname === "/build-on/index.html"
-  );
-}
-
-function isRetiredQuickstartPage(pathname: string): boolean {
-  return (
-    pathname === "/quickstart" ||
-    pathname === "/quickstart/" ||
-    pathname === "/quickstart.html" ||
-    pathname === "/quickstart/index.html"
-  );
+/** HTML forms of the worker aliases. Targets are `docsRedirects()`, not a second copy of the paths. */
+function workerHtmlAliasTarget(pathname: string): string | undefined {
+  const redirects = docsRedirects(true);
+  for (const alias of Object.keys(WORKER_DOC_ALIASES)) {
+    if (
+      pathname === alias ||
+      pathname === `${alias}/` ||
+      pathname === `${alias}.html` ||
+      pathname === `${alias}/index.html`
+    ) {
+      return redirects[alias];
+    }
+  }
+  return undefined;
 }
 
 function redirectOn(host: string, path: string, search: string): HostRoute {

@@ -7,8 +7,10 @@ import {
   isDocsHost,
   isDocsPath,
   isMarketingOnlyPath,
+  markdownFallbackPath,
   routeRequest,
 } from "./routes";
+import { WORKER_DOC_ALIASES, docAliasCandidates, docsRedirects } from "./docs-redirects";
 
 function urlOn(host: string, path: string): URL {
   return new URL(path, `https://${host}`);
@@ -313,8 +315,46 @@ describe("sitemap exclusions", () => {
     }
     const filter = readFileSync(new URL("../astro.config.mjs", import.meta.url), "utf8")
       .match(/filter: \(page\) => ([^\n]+)/)?.[1];
+    expect(filter).toContain('!new URL(page).pathname.endsWith(".md")');
     expect(filter).toContain("!isEmbedPath(new URL(page).pathname)");
     expect(filter).toContain("!isVgpuConceptPath(new URL(page).pathname)");
     expect(filter).toContain("!isConnectPath(new URL(page).pathname)");
+  });
+});
+
+describe("missing markdown twins", () => {
+  test("docs-host markdown URLs name the alias, and the alias names its canonical page", () => {
+    expect(markdownFallbackPath(DOCS_HOST, "/quickstart/install.md")).toBe("/quickstart/install");
+    expect(docAliasCandidates("/quickstart/install")).toEqual(["/installation"]);
+    expect(markdownFallbackPath(DOCS_HOST, "/consumers/getting-started.md")).toBe("/consumers/getting-started");
+    expect(docAliasCandidates("/consumers/getting-started")).toEqual(["/agents"]);
+    expect(docAliasCandidates("/quickstart")).toEqual(["/getting-started"]);
+    expect(docAliasCandidates("/build-on")).toEqual(["/building"]);
+    expect(docAliasCandidates("/concepts/when-to-use")).toEqual(["/compare", "/concepts"]);
+    expect(docsRedirects(true)["/concepts/when-to-use"]).toBe("/compare");
+    expect(docsRedirects(false)["/concepts/when-to-use"]).toBe("/concepts");
+    const redirects = docsRedirects(true);
+    for (const alias of Object.keys(WORKER_DOC_ALIASES)) {
+      const target = redirects[alias];
+      for (const path of [alias, `${alias}/`, `${alias}.html`, `${alias}/index.html`]) {
+        expect(routeRequest(DOCS_HOST, urlOn(DOCS_HOST, `${path}?from=search`))).toEqual({
+          kind: "redirect",
+          location: `https://docs.phux.sh${target}?from=search`,
+          status: 301,
+        });
+      }
+      expect(routeRequest(DOCS_HOST, urlOn(DOCS_HOST, `${alias}.md`))).toEqual({ kind: "asset" });
+    }
+  });
+
+  test("leaves real misses, encoded suffixes, and other hosts alone", () => {
+    expect(markdownFallbackPath(DOCS_HOST, "/quickstart/missing")).toBeUndefined();
+    expect(markdownFallbackPath(DOCS_HOST, "/notes.md")).toBeUndefined();
+    expect(markdownFallbackPath(DOCS_HOST, "/concepts/vgpu.md")).toBeUndefined();
+    expect(markdownFallbackPath(DOCS_HOST, "/quickstart/install.MD")).toBeUndefined();
+    expect(markdownFallbackPath(DOCS_HOST, "/quickstart/install%2Emd")).toBeUndefined();
+    expect(markdownFallbackPath(DOCS_HOST, "/x.md.md")).toBeUndefined();
+    expect(markdownFallbackPath(DOCS_HOST, "//evil.com.md")).toBeUndefined();
+    expect(markdownFallbackPath(SITE_HOST, "/quickstart/install.md")).toBeUndefined();
   });
 });

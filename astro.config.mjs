@@ -13,6 +13,7 @@ import {
   remarkNpm,
 } from "fumadocs-core/mdx-plugins";
 import { buildSearchIndex } from "./scripts/build-search.mjs";
+import { docsRedirects } from "./host/docs-redirects.ts";
 import { isConnectPath, isDocsPath, isEmbedPath, isVgpuConceptPath } from "./host/routes.ts";
 import { publishLlmsTxt } from "./scripts/publish-llms.ts";
 import { splitDocsSitemap } from "./scripts/split-sitemaps.ts";
@@ -81,84 +82,10 @@ export default defineConfig({
   trailingSlash: "never",
   build: { format: "file" },
   // The phux docs were flattened in 2026-10; keep the old public URLs
-  // landing somewhere sensible.
-  // The phux docs were flattened in 2026-10; keep the old public URLs
   // landing somewhere sensible. ADR deep links are not redirected; the
-  // archive is the pre-reset tree on GitHub.
-  redirects: {
-    "/quickstart": "/getting-started",
-    // docs.phux.sh/build-on. The worker answers this with a 301; this HTML
-    // redirect is the fallback on hosts that do not run that rule.
-    "/build-on": "/building",
-    "/quickstart/install": "/installation",
-    "/quickstart/config": "/config",
-    "/concepts/when-to-use": compare ?? "/concepts",
-    "/concepts/coming-from": "/getting-started",
-    "/concepts/vision": "/architecture",
-    "/remote-access": "/remote",
-    "/consumers": "/clients",
-    "/wire": "/protocol",
-    "/consumers/agents/cli": "/scripting",
-    "/consumers/agents/targeting": "/scripting",
-    "/consumers/agents/json": "/scripting",
-    "/consumers/agents/integrations": "/scripting",
-    "/consumers/agents": "/scripting",
-    "/consumers/attention": "/agents",
-    "/consumers/harness": "/agents",
-    "/consumers/mission": "/agents",
-    "/consumers/mcp": "/agents",
-    "/consumers/claude": "/agents",
-    "/consumers/grok": "/agents",
-    "/consumers/omp": "/agents",
-    "/consumers/opencode-v2": "/agents",
-    "/consumers/pi": "/agents",
-    "/consumers/pi-in-60-seconds": "/agents",
-    "/consumers/getting-started": "/agents",
-    "/consumers/android": "/clients",
-    "/consumers/ios": "/clients",
-    "/consumers/cockpit": "/clients",
-    "/consumers/desktop": "/clients",
-    "/consumers/web": "/clients",
-    "/consumers/tui": "/getting-started",
-    "/consumers/tui/commands": "/getting-started",
-    "/consumers/tui/configuration": "/getting-started",
-    "/consumers/tui/interface": "/getting-started",
-    "/consumers/tui/automation": "/getting-started",
-    "/consumers/tui/reference": "/getting-started",
-    "/consumers/recording": "/getting-started",
-    "/consumers/build-a-client": "/protocol",
-    "/consumers/sdk": "/protocol",
-    "/wire/changelog": "/protocol",
-    "/wire/l1": "/protocol",
-    "/wire/l2": "/protocol",
-    "/wire/l3": "/protocol",
-    "/wire/tutorial": "/protocol",
-    "/wire/appendix-encoding": "/protocol",
-    "/wire/appendix-reserved": "/protocol",
-    "/wire/coordinator": "/protocol",
-    "/wire/input": "/protocol",
-    "/wire/proto": "/protocol",
-    "/wire/workload-auth": "/protocol",
-    "/architecture/diagram": "/architecture",
-    "/architecture/client-runtime": "/architecture",
-    "/architecture/crate-graph": "/architecture",
-    "/architecture/data-model": "/architecture",
-    "/architecture/declared-producers": "/architecture",
-    "/architecture/defguard-federation": "/architecture",
-    "/architecture/desktop-verification": "/architecture",
-    "/architecture/desktop": "/architecture",
-    "/architecture/module-structure": "/architecture",
-    "/architecture/phux-and-herdr": "/architecture",
-    "/architecture/predictive-echo": "/architecture",
-    "/architecture/process-model": "/architecture",
-    "/architecture/render-layering": "/architecture",
-    "/architecture/state-sync": "/architecture",
-    "/architecture/threading": "/architecture",
-    "/architecture/transport": "/architecture",
-    "/architecture/usage-collector": "/architecture",
-    "/architecture/verification": "/architecture",
-    "/architecture/operations": "/troubleshooting",
-  },
+  // archive is the pre-reset tree on GitHub. The same map drives the
+  // worker's `<path>.md` aliases (host/docs-redirects.ts).
+  redirects: docsRedirects(compare !== null),
   // The hero is a React island (<HeroDemo client:load />); it loads
   // the terminal on demand. Docs chrome is <Docs client:load />. Host
   // split (phux.sh vs docs.phux.sh) is the site worker in host/index.ts.
@@ -166,7 +93,8 @@ export default defineConfig({
     react(),
     mdx({ extendMarkdownConfig: true, syntaxHighlight: false }),
     sitemap({
-      filter: (page) => !isEmbedPath(new URL(page).pathname) && !isVgpuConceptPath(new URL(page).pathname) && !isConnectPath(new URL(page).pathname),
+      // Markdown twins are alternates of the HTML routes. Do not list them.
+      filter: (page) => !new URL(page).pathname.endsWith(".md") && !isEmbedPath(new URL(page).pathname) && !isVgpuConceptPath(new URL(page).pathname) && !isConnectPath(new URL(page).pathname),
       serialize(item) {
         const url = new URL(item.url);
         const docs = isDocsPath(url.pathname);

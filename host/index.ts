@@ -12,7 +12,8 @@
  * tripwire traps on hostile-bait paths (host/tripwire-paths.ts →
  * host/tripwire.ts).
  */
-import { routeRequest, sitemapIndexAsset } from "./routes";
+import { docAliasCandidates } from "./docs-redirects";
+import { markdownFallbackPath, routeRequest, sitemapIndexAsset } from "./routes";
 import { handleAssociationRequest } from "./pairing";
 import { APP_RELEASE_PATH, handleAppRelease } from "./app-release";
 import type { TestFlightEnv } from "./testflight";
@@ -171,6 +172,14 @@ export default {
     ) {
       asset = await demoVideoRange(request, asset);
     }
+    // Retired docs URLs are HTML meta-refresh stubs. Send `<path>.md` to the
+    // canonical twin in one hop so a cached 301 does not stop on the stub.
+    const markdownFallback = await missingMarkdownRedirect(request, asset, env);
+    if (markdownFallback) {
+      recordEvents(env.TELEMETRY, ctx, classifyRequest(request, markdownFallback));
+      observe(env, ctx, request, markdownFallback);
+      return markdownFallback;
+    }
     const contentType = asset.headers.get("content-type") ?? "";
     if (!asset.ok || !contentType.includes("text/html")) {
       recordEvents(env.TELEMETRY, ctx, classifyRequest(request, asset));
@@ -209,6 +218,65 @@ export default {
     return html;
   },
 };
+
+/** Redirect a docs-host alias `<path>.md` to its canonical twin, or to that HTML page when the twin is missing. */
+async function missingMarkdownRedirect(request: Request, asset: Response, env: Env): Promise<Response | undefined> {
+  if (request.method !== "GET" && request.method !== "HEAD") return undefined;
+  if (asset.status !== 404) return undefined;
+  const url = new URL(request.url);
+  const path = markdownFallbackPath(url.hostname, url.pathname);
+  if (!path) return undefined;
+  const candidates = docAliasCandidates(path);
+  // See docAliasCandidates: this one target is chosen per request, so do not cache it.
+  const status = path === "/concepts/when-to-use" ? 302 : 301;
+  if (candidates.length > 0) {
+    for (const target of candidates) {
+      const twinUrl = new URL(url);
+      twinUrl.pathname = `${target}.md`;
+      const twin = await env.ASSETS.fetch(new Request(twinUrl, { method: "GET" }));
+      const twinType = twin.headers.get("content-type") ?? "";
+      if (twin.ok && twinType.includes("text/markdown")) {
+        await twin.body?.cancel();
+        await asset.body?.cancel();
+        return redirectTo(url, `${target}.md`, status);
+      }
+      await twin.body?.cancel();
+      // A 200 that is not the markdown twin must not become a cached redirect.
+      if (twin.ok) return undefined;
+      if (twin.status !== 404) return undefined;
+      const page = await fetchHtmlPage(url, target, env);
+      if (page) {
+        await asset.body?.cancel();
+        return redirectTo(url, target, status);
+      }
+    }
+    return undefined;
+  }
+  if (await fetchHtmlPage(url, path, env)) {
+    await asset.body?.cancel();
+    return redirectTo(url, path, 301);
+  }
+  return undefined;
+}
+
+/** True when `<pathname>` is an HTML document. Cancels the body either way. */
+async function fetchHtmlPage(url: URL, pathname: string, env: Env): Promise<boolean> {
+  const pageUrl = new URL(url);
+  pageUrl.pathname = pathname;
+  const page = await env.ASSETS.fetch(new Request(pageUrl, { method: "GET" }));
+  const type = page.headers.get("content-type") ?? "";
+  await page.body?.cancel();
+  return page.ok && type.includes("text/html");
+}
+
+function redirectTo(url: URL, pathname: string, status: 301 | 302): Response {
+  if (!pathname.startsWith("/") || pathname.startsWith("//") || pathname.includes("\\")) {
+    return new Response(null, { status: 404 });
+  }
+  const location = new URL(url);
+  location.pathname = pathname;
+  return Response.redirect(location.href, status);
+}
 
 // Workers static assets ignore Range. The native Cache API slices a stored
 // Content-Length response without buffering the entire film in JavaScript.
