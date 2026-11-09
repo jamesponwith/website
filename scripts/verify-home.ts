@@ -7,7 +7,7 @@ import { chromium } from "playwright-core";
 import { verifyStaticHome } from "./home-static-checks";
 import { verifyFox } from "./home-fox-checks";
 import { verifyHomeContent } from "./home-content-checks";
-import { verifyDeviceInstalls } from "./home-platform-checks";
+import { verifyDeviceInstalls, verifyLinuxRune, verifyRuneDock } from "./home-platform-checks";
 import { platformVisitors } from "./home-platform-fixtures";
 import { homeServer } from "./home-server";
 import { verifyEmailFallback } from "./home-email-fallback-checks";
@@ -115,9 +115,7 @@ try {
   await target("rune").hover();
   assert.ok(await download.isVisible(), "hover swaps to the Rune download");
   assert.equal(await command.isHidden(), true, "Rune leads with the download, not a command");
-  assert.equal(await download.getAttribute("href"), "/download/rune", "the download is the worker's latest Rune archive redirect");
-  assert.equal((await page.locator("#install-note").innerText()).trim(), "First open: macOS asks to confirm an app downloaded from the internet. Choose Open.", "the first-open line stays until a real Mac confirms it");
-  assert.equal(await page.locator(".linux-desktop-note").count(), 0);
+  await verifyRuneDock(page);
   await target("mobile").click();
   assert.equal(await target("mobile").getAttribute("aria-pressed"), "true", "the clicked target is pressed");
   assert.ok(await request.isVisible(), "Mobile asks for an address instead of printing a command");
@@ -200,7 +198,12 @@ try {
   assert.ok(await page.locator("#beta form").isVisible(), "release signup is preserved");
   assert.equal(await page.locator("[data-copy]").count(), 2, "alternate installers preserved");
   assert.equal(await page.locator(".rune-install code").innerText(), "curl -fsSL https://phux.sh/install | sh -s -- --rune", "/more installs the Rune client");
-  assert.match(await page.locator(".rune-install p").innerText(), /macOS 14 or later, or x86_64 Linux/);
+  assert.match(await page.locator(".rune-install p").first().innerText(), /macOS 14 or later, or Linux on x86_64 or arm64 \(glibc 2\.39\+/);
+  assert.deepEqual(
+    await page.locator(".rune-archives a").evaluateAll(links => links.map(link => link.getAttribute("href"))),
+    ["/download/rune", "/download/rune/linux-x86_64", "/download/rune/linux-aarch64"],
+    "/more offers every Rune build",
+  );
   await page.goto(`${base}/privacy`);
   assert.equal(await page.getByRole("link", { name: "join the beta" }).getAttribute("href"), "/more#beta");
   assert.equal(await page.getByRole("link", { name: "request access to phux for iPhone" }).getAttribute("href"), "/more#testflight");
@@ -238,6 +241,7 @@ try {
   assert.deepEqual(errors, [], "no browser exceptions");
   await context.close();
   await verifyDeviceInstalls(browser, base, artifacts);
+  await verifyLinuxRune(browser, base, artifacts);
   await verifyEmailFallback(browser, base);
   await verifyStaticHome(browser, base);
   console.log(`PASS home: real workspace captures, pointer/touch/keyboard reveal and enlargement, first-fold install, optional walkthrough, lazy workspace lifecycle, install/copy/beta, tour chapters/pause/focus, glass shell auth/failure recovery, mobile/tablet/desktop, reduced motion, no-JS, idle resource budget. Screenshots: ${artifacts}`);

@@ -1,6 +1,7 @@
 /**
  * GET /download/rune (and the retired /download/desktop) — the Apple-silicon
- * Phux Rune download.
+ * Phux Rune download — and GET /download/rune/linux-{x86_64,aarch64}, the
+ * Linux tarballs.
  *
  * Redirects to the version Rune's update feed names, so the link never waits
  * on a site rebuild. Like Rune itself, only the version is read from the feed;
@@ -16,6 +17,19 @@ const FRESH_MS = 5 * 60_000;
 const VERSION = /^\d+\.\d+\.\d+(-alpha\.\d+)?$/;
 
 let cached: { url: string; at: number } | null = null;
+let linuxVersion: { version: string; at: number } | null = null;
+
+/** The Linux tarball architectures Rune publishes, as named in the asset. */
+export const LINUX_ARCHES = ["x86_64", "aarch64"] as const;
+export type LinuxArch = (typeof LINUX_ARCHES)[number];
+
+export function isLinuxArch(value: string): value is LinuxArch {
+  return (LINUX_ARCHES as readonly string[]).includes(value);
+}
+
+export function runeLinuxArchiveUrl(version: string, arch: LinuxArch): string {
+  return `${RELEASES}/download/rune-v${version}/phux-rune-${version}-linux-${arch}.tar.gz`;
+}
 
 export function runeArchiveUrl(version: string, format: "zip" | "dmg" = "zip"): string {
   return `${RELEASES}/download/rune-v${version}/phux-rune-${version}-macos-arm64.${format}`;
@@ -33,6 +47,34 @@ export async function runeDownload(
       "cache-control": "no-store",
     },
   });
+}
+
+/** Every Rune release ships both tarballs, so no asset probe is needed. */
+export async function runeLinuxDownload(
+  arch: LinuxArch,
+  fetchImpl: Fetch = (input, init) => fetch(input, init),
+  now = Date.now(),
+): Promise<Response> {
+  const version = await linuxFeedVersion(fetchImpl, now);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      location: version ? runeLinuxArchiveUrl(version, arch) : RELEASES,
+      "cache-control": "no-store",
+    },
+  });
+}
+
+async function linuxFeedVersion(fetchImpl: Fetch, now: number): Promise<string | null> {
+  if (linuxVersion && now - linuxVersion.at < FRESH_MS) return linuxVersion.version;
+  try {
+    const version = await feedVersion(fetchImpl, AbortSignal.timeout(5_000));
+    if (!version) return linuxVersion?.version ?? null;
+    linuxVersion = { version, at: now };
+    return version;
+  } catch {
+    return linuxVersion?.version ?? null;
+  }
 }
 
 async function runeUrl(fetchImpl: Fetch, now: number): Promise<string | null> {
@@ -74,4 +116,5 @@ async function preferredArchive(version: string, fetchImpl: Fetch, signal: Abort
 /** Tests only: forget the remembered download. */
 export function resetRuneDownload(): void {
   cached = null;
+  linuxVersion = null;
 }

@@ -10,7 +10,7 @@ test("the dry run is the same installer told to install nothing",()=>{
   expect(dryRun("")).toBe("");
   expect(installTargets.map(t=>t.id)).toEqual(["cli","rune","mobile"]);
   expect(installTargets.find(t=>t.id==="rune")?.command).toBe("curl -fsSL https://phux.sh/install | sh -s -- --rune");
-  expect(installTargets.find(t=>t.id==="rune")?.note).toBe("Apple-silicon Mac (macOS 14+) · or install from a terminal on macOS or x86_64 Linux. Installs the phux CLI too if none is found.");
+  expect(installTargets.find(t=>t.id==="rune")?.note).toBe("Apple-silicon Mac (macOS 14+) · or install from a terminal on macOS or Linux (x86_64 or arm64). Installs the phux CLI too if none is found.");
   expect(desktopFirstOpen).toBe("First open: macOS asks to confirm an app downloaded from the internet. Choose Open.");
 });
 test("the visitor's phone is detected, and a computer has none",()=>{

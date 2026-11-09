@@ -4,7 +4,7 @@ import AuthReturn from "../components/AuthReturn.astro";
 import PhuxExplainer from "../components/motion/PhuxExplainer";
 import { SITE, docsHref } from "../lib/site";
 import release from "../lib/release.json";
-import { runeInstall } from "../lib/install";
+import { linuxArchLabels, linuxArches, runeDownload, runeInstall, runeLinuxDownload, runeLinuxRequirements } from "../lib/install";
 import MobileAccessForm from "../components/MobileAccessForm.astro";
 
 const cliInstall = "curl -fsSL https://phux.sh/install | sh";
@@ -59,8 +59,12 @@ const FEATURES = [
         <code tabindex="0">{runeInstall}</code>
         <button type="button" data-copy={runeInstall}>Copy</button>
         <p>
-          Apple silicon · macOS 14 or later, or x86_64 Linux. Installs the phux CLI too if none is found.{" "}
+          Apple silicon · macOS 14 or later, or Linux on x86_64 or arm64 ({runeLinuxRequirements}). Installs the phux CLI too if none is found.{" "}
           <a href={docsHref("/clients#phux-rune")}>About Phux Rune</a>
+        </p>
+        <p class="rune-archives">
+          Download: <a href={runeDownload}>Mac</a>
+          {linuxArches.map((arch) => <> · <a href={runeLinuxDownload(arch)}>Linux {linuxArchLabels[arch]}</a></>)}
         </p>
       </div>
       <div class="install-cmd">

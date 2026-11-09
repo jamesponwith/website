@@ -7,7 +7,8 @@
  * (host/mcp.ts), answers agent docs search at /search.json (host/search.ts),
  * records passive aggregate telemetry (host/telemetry.ts),
  * serves the public telemetry dashboard API at /api/telemetry, redirects
- * /download/rune to the Phux Rune download (host/download.ts), and springs
+ * /download/rune (and /download/rune/linux-*) to the Phux Rune downloads
+ * (host/download.ts), and springs
  * tripwire traps on hostile-bait paths (host/tripwire-paths.ts →
  * host/tripwire.ts).
  */
@@ -118,6 +119,18 @@ export default {
       recordEvents(env.TELEMETRY, ctx, classifyRequest(request, response));
       observe(env, ctx, request, response);
       return response;
+    }
+
+    // The Linux tarballs, x86_64 and arm64, resolved the same way.
+    const linux = url.pathname.match(/^\/download\/rune\/linux-([a-z0-9_]+)$/);
+    if (linux) {
+      const { isLinuxArch, runeLinuxDownload } = await import("./download");
+      if (isLinuxArch(linux[1]!)) {
+        const response = await runeLinuxDownload(linux[1]);
+        recordEvents(env.TELEMETRY, ctx, classifyRequest(request, response));
+        observe(env, ctx, request, response);
+        return response;
+      }
     }
 
     // The newest TestFlight builds, for phux-mobile's update prompt

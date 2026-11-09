@@ -27,7 +27,7 @@ async function walk(dir: string): Promise<string[]> {
 /** Does an internal path (no hash/query) exist in dist? */
 function resolves(path: string): boolean {
   // host/index.ts serves these dynamic routes, not dist files.
-  if (path === "/mcp" || path === "/download/desktop" || path === "/download/rune" || path === "/download/ios" || path === "/search.json") return true;
+  if (path === "/mcp" || path === "/download/desktop" || path === "/download/rune" || path === "/download/rune/linux-x86_64" || path === "/download/rune/linux-aarch64" || path === "/download/ios" || path === "/search.json") return true;
   if (path === "/") return existsSync(join(DIST, "index.html"));
   const clean = path.replace(/\/+$/, "");
   return (

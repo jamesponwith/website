@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { resetRuneDownload, runeArchiveUrl, runeDownload, type Fetch } from "./download";
+import { resetRuneDownload, runeArchiveUrl, runeDownload, runeLinuxArchiveUrl, runeLinuxDownload, type Fetch } from "./download";
 import handler from "./index";
 
 const RELEASES = "https://github.com/no-phux/phux/releases";
@@ -113,5 +113,56 @@ describe("GET /download/rune", () => {
     expect(timeout).toHaveBeenCalledTimes(1);
     expect(timeout).toHaveBeenCalledWith(5_000);
     expect(fetchImpl.mock.calls[1]![1]?.signal).toBe(fetchImpl.mock.calls[0]![1]?.signal);
+  });
+});
+
+describe("GET /download/rune/linux-*", () => {
+  beforeEach(resetRuneDownload);
+  afterEach(() => mock.restore());
+  const tarball = (version: string, arch: string) =>
+    `${RELEASES}/download/rune-v${version}/phux-rune-${version}-linux-${arch}.tar.gz`;
+  const linux = async (arch: "x86_64" | "aarch64", fetchImpl: Fetch, now = 0) =>
+    (await runeLinuxDownload(arch, fetchImpl, now)).headers.get("location");
+
+  test.each(["x86_64", "aarch64"] as const)("redirects to the feed's %s tarball without probing it", async (arch) => {
+    const fetchImpl = release("0.1.5");
+    const response = await runeLinuxDownload(arch, fetchImpl, 0);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(tarball("0.1.5", arch));
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([FEED]);
+    expect(runeLinuxArchiveUrl("0.1.5", arch)).toBe(tarball("0.1.5", arch));
+  });
+
+  test("caches the feed version for five minutes and keeps it on a bad feed", async () => {
+    const fetchImpl = release("0.1.5");
+    await linux("aarch64", fetchImpl);
+    expect(await linux("x86_64", fetchImpl, FRESH_MS - 1)).toBe(tarball("0.1.5", "x86_64"));
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    for (const bad of [status(504), offline]) expect(await linux("aarch64", bad, FRESH_MS)).toBe(tarball("0.1.5", "aarch64"));
+  });
+
+  test.each([status(504), offline, async () => Response.json({ version: "../evil" })] as Fetch[])(
+    "falls back to the releases page on a bad feed without a cache",
+    async (fetchImpl) => {
+      expect(await linux("aarch64", fetchImpl)).toBe(RELEASES);
+    },
+  );
+
+  test.each(["x86_64", "aarch64"])("the host endpoint /download/rune/linux-%s serves it", async (arch) => {
+    spyOn(globalThis, "fetch").mockResolvedValueOnce(feed("0.1.5"));
+    const asset = mock(async () => new Response("not the download", { status: 404 }));
+    const response = await handler.fetch(new Request(`https://phux.sh/download/rune/linux-${arch}`), { ASSETS: { fetch: asset } });
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(tarball("0.1.5", arch));
+    expect(asset).not.toHaveBeenCalled();
+  });
+
+  test("an unknown architecture is not a download", async () => {
+    const fetchSpy = spyOn(globalThis, "fetch");
+    const asset = mock(async () => new Response("missing", { status: 404 }));
+    const response = await handler.fetch(new Request("https://phux.sh/download/rune/linux-riscv64"), { ASSETS: { fetch: asset } });
+    expect(response.headers.get("location")).toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
