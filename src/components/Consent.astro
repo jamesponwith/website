@@ -1,0 +1,99 @@
+---
+// The opt-in analytics card (src/lib/consent.ts). Shown once, until the
+// visitor chooses; never shown to browsers sending Global Privacy Control.
+// Anything with `data-consent-open` reopens it ("Privacy choices").
+---
+
+<aside class="consent-card" id="phux-consent" aria-labelledby="phux-consent-title" hidden transition:persist>
+  <p class="consent-title" id="phux-consent-title">Help shape phux?</p>
+  <p class="consent-copy">
+    Allow one first-party cookie so we can see which pages lead to installs.
+    No ads, no third parties, never sold.{" "}
+    <a href="https://phux.sh/privacy#website">Details</a>
+  </p>
+  <div class="consent-actions">
+    <button type="button" data-consent="deny">No thanks</button>
+    <button type="button" data-consent="grant">Allow</button>
+  </div>
+</aside>
+
+<script>
+  import { consentState, deny, grant, instrument } from "../lib/consent";
+
+  const card = () => document.getElementById("phux-consent");
+  const show = (visible: boolean) => {
+    const element = card();
+    if (element) element.hidden = !visible;
+  };
+
+  document.addEventListener("click", (event) => {
+    const target = event.target as Element | null;
+    const choice = target?.closest?.("[data-consent]")?.getAttribute("data-consent");
+    if (choice === "grant" || choice === "deny") {
+      if (choice === "grant") grant();
+      else deny();
+      show(false);
+      return;
+    }
+    if (target?.closest?.("[data-consent-open]")) {
+      event.preventDefault();
+      show(true);
+      card()?.querySelector<HTMLButtonElement>(`[data-consent="${consentState() === "granted" ? "deny" : "grant"}"]`)?.focus();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !card()?.hidden && card()?.contains(document.activeElement)) show(false);
+  });
+
+  instrument();
+  if (consentState() === null) setTimeout(() => show(true), 900);
+</script>
+
+<style is:global>
+  .consent-card {
+    position: fixed;
+    z-index: 1000;
+    left: 16px;
+    bottom: 16px;
+    width: min(360px, calc(100vw - 32px));
+    padding: 16px 16px 14px;
+    border: 1px solid #c8d0c024;
+    border-radius: 12px;
+    background: #121518f2;
+    color: #e7e2da;
+    box-shadow: 0 18px 48px -16px #000c;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    backdrop-filter: blur(12px);
+    animation: consent-in 260ms ease-out both;
+  }
+  .consent-card[hidden] { display: none; }
+  .consent-title { margin: 0 0 4px; font-weight: 600; letter-spacing: -.01em; }
+  .consent-copy { margin: 0; color: #adb8b0; font-size: 13px; }
+  .consent-copy a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+  .consent-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .consent-actions button {
+    flex: 1;
+    min-height: 40px;
+    border: 1px solid #c8d0c033;
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .consent-actions button[data-consent="grant"] { background: #e7e2da; border-color: #e7e2da; color: #0c0f11; }
+  .consent-actions button:hover { border-color: #c8d0c066; }
+  .consent-actions button:focus-visible, .consent-copy a:focus-visible { outline: 2px solid #7aa2f7; outline-offset: 2px; }
+  html.light .consent-card { background: #fffffff2; color: #18181b; border-color: #18181b1f; box-shadow: 0 18px 48px -20px #18181b4d; }
+  html.light .consent-copy { color: #52525b; }
+  html.light .consent-actions button { border-color: #18181b26; }
+  html.light .consent-actions button[data-consent="grant"] { background: #18181b; border-color: #18181b; color: #fff; }
+  .privacy-choices { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
+  footer .privacy-choices { color: inherit; }
+  .privacy-choices:hover { text-decoration: underline; text-underline-offset: 3px; }
+  @keyframes consent-in { from { opacity: 0; transform: translateY(8px); } }
+  @media (prefers-reduced-motion: reduce) { .consent-card { animation: none; } }
+  @media (max-width: 560px) { .consent-actions button { min-height: 44px; } }
+</style>

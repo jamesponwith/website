@@ -57,14 +57,14 @@
 :where(.policy) .summary ul {
   margin: 0;
 }
-:where(.policy) a {
+:where(.policy) :is(a, .privacy-choices) {
   color: var(--color-accent);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
-:where(.policy) a:hover,
-:where(.policy) a:focus-visible {
+:where(.policy) :is(a, .privacy-choices):hover,
+:where(.policy) :is(a, .privacy-choices):focus-visible {
   text-decoration-thickness: 2px;
 }
 :where(.policy) code {

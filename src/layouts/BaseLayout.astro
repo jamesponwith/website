@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import Head from "../components/Head.astro";
 import GitHubBadge from "../components/GitHubBadge.astro";
+import Consent from "../components/Consent.astro";
 import { SITE, NAV, docsHref } from "../lib/site";
 import brand from "../../brand.lock.json";
 
@@ -72,6 +73,7 @@ const navigation = minimal ? [
             <a class="concept-link" href="/concepts/vgpu" title="Explore the phux light lab"><span aria-hidden="true">◌</span> Concepts</a>
             <a href="/more">More</a>
             <a href="/privacy">Privacy</a>
+            <button type="button" class="privacy-choices" data-consent-open>Privacy choices</button>
           <a href="/brand">Brand assets</a>
             <a href="/support">Support</a>
             <a href="https://x.com/phall249" target="_blank" rel="me noopener">@phall249 on X</a>
@@ -105,13 +107,14 @@ const navigation = minimal ? [
           <a href="https://x.com/phall249" target="_blank" rel="me noopener">@phall249 on X</a>
           <a href={SITE.github + "/blob/main/LICENSE"} target="_blank" rel="noopener">Apache-2.0</a>
           <a href="/privacy">Privacy</a>
+          <button type="button" class="privacy-choices" data-consent-open>Privacy choices</button>
           <a href="/brand">Brand assets</a>
           <a href="/support">Support</a>
         </nav>
       </div>
       <p class="foot-end">© 2026 no-phux</p></>}
     </footer>
-
+    <Consent />
   </body>
 </html>
 
@@ -140,7 +143,7 @@ const navigation = minimal ? [
   .concept-link span { display:inline-block; margin-right:5px; opacity:.7; transition:transform .35s ease; }
   .concept-link:hover span, .concept-link:focus-visible span { transform:rotate(90deg); }
   @media(prefers-reduced-motion:reduce) { .concept-link span { transition:none; } }
-  .quiet-foot a { display: inline-flex; align-items: center; min-height: 44px; }
+  .quiet-foot a, .quiet-foot .privacy-choices { display: inline-flex; align-items: center; min-height: 44px; }
   @media (max-width: 560px) {
     :global(html[data-home]) .nav { flex-wrap: nowrap; gap: 16px; }
     :global(html[data-home]) .nav .links { flex-basis: auto; flex-wrap: nowrap; margin-left: auto; gap: 16px; }

@@ -13,6 +13,7 @@ import {
   type AnalyticsHandlerResult,
 } from "./analytics";
 import type { TestFlightEnv } from "./testflight";
+import { handleCollect } from "./collect";
 import {
   MemberCrypto,
   runAnalyticsBackground,
@@ -62,7 +63,22 @@ const claimRoute = Effect.fn("analytics.claimRoute")(function*(
   );
 });
 
+const collectRoute = Effect.fn("analytics.collectRoute")(function*(
+  request: HttpServerRequest.HttpServerRequest,
+) {
+  if (request.method !== "POST") {
+    return HttpServerResponse.text("post only", { status: 405 });
+  }
+  const context = yield* AnalyticsRequest;
+  const result = yield* handleCollect(request.source as Request, context.env);
+  if (result.background) {
+    yield* Effect.sync(() => runAnalyticsBackground(context.ctx, result.background!));
+  }
+  return HttpServerResponse.fromWeb(result.response);
+});
+
 const Routes = HttpRouter.addAll([
+  HttpRouter.route("*", "/api/collect", collectRoute),
   HttpRouter.route("*", "/api/join", signupRoute("analytics.joinRoute", handleJoin)),
   HttpRouter.route("*", "/api/beta", signupRoute("analytics.betaRoute", handleBeta)),
   HttpRouter.route("*", "/api/claim", claimRoute),

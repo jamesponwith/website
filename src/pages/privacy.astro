@@ -8,10 +8,11 @@
 // release and bump LAST_UPDATED.
 import BaseLayout from "../layouts/BaseLayout.astro";
 import MobileDevicePrivacy from "../components/privacy/MobileDevicePrivacy.astro";
+import WebsitePrivacy from "../components/privacy/WebsitePrivacy.astro";
 import { SITE } from "../lib/site";
 import "../styles/privacy.css";
 
-const LAST_UPDATED = "2026-10-27";
+const LAST_UPDATED = "2026-11-09";
 const CONTACT = "privacy@phall.io";
 const title = `${SITE.name} — Privacy policy`;
 const description =
@@ -182,88 +183,7 @@ const description =
       </p>
     </section>
 
-    <section aria-labelledby="website">
-      <h2 id="website">the website</h2>
-      <p>
-        <code>phux.sh</code> and <code>docs.phux.sh</code> run on Cloudflare.
-        The site loads no third-party analytics script and sets no cookies for
-        ordinary visits. Its fonts load from Bunny Fonts, which receives your
-        IP address as part of that request. Two kinds of measurement run on
-        the server side.
-      </p>
-      <p>
-        <strong>Public aggregate counters.</strong> For each request, the site
-        increments hourly counters by user-agent class (for example
-        "browser" or a named AI crawler), country, hostname, response status,
-        and type of request. Page views and installer requests also count an
-        allowlisted <code>ref</code> tag and the referring site reduced to a
-        channel name, never the full address. These counters contain no IP
-        addresses, raw user agents, or cookies. They are published live at
-        <a href="/telemetry">/telemetry</a>.
-      </p>
-      <p>
-        <strong>Private analytics.</strong> Each request is also recorded in a
-        private event store. It stores the hostname and page path (never the
-        query string, except the campaign tags <code>utm_source</code>, <code>utm_medium</code>, and <code>utm_campaign</code>),
-        the referring site's hostname, country, and user-agent class, and for
-        installer downloads the operating system, CPU architecture, and
-        download tool. Visitors are counted
-        with an ID computed from your IP address and user agent under a key
-        that changes every day, so visits cannot be linked from one day to
-        the next. The IP address itself is never stored. To tell people apart
-        from AI agents, crawlers, and scanners, a summary of a visitor's day
-        (user-agent class, country, referrer type, campaign tags, and pages
-        visited; for unrecognized clients, a truncated user-agent string with
-        email addresses removed) can be sent to TypeSafe, an AI
-        classification service. The summary never includes an IP address,
-        email address, or cookie.
-      </p>
-      <p>
-        <strong>The beta list.</strong> If you <a href="/more#beta">join the beta</a>,
-        we store your email address, the
-        date you joined, the form you used, your country, and your user-agent
-        class. We use it to email you about the beta. We do not sell or rent
-        it. The beta emails include a personal link. If you choose to open it,
-        it sets a first-party <code>phux_mid</code> cookie for one year, which
-        links your later visits on that browser to your beta membership. This
-        cookie is the only way the site identifies an individual visitor, and
-        only happens if you click that link.
-      </p>
-      <p>
-        <strong>TestFlight requests.</strong> You can join through an enabled
-        public TestFlight link without giving this site an email address; Apple
-        handles joining and installation. If you use the email form to
-        <a href="/more#testflight">request access to phux for iPhone</a>, we send
-        your email address to Apple through App Store Connect, which adds you
-        as a TestFlight tester and emails you the invite. Apple keeps tester
-        records under its own privacy policy. If you ask for the Android beta
-        instead, we add the address to the app's Google Play testing list by
-        hand, and Google handles it under its own privacy policy. We also keep
-        either request on the beta list described above. To leave the beta,
-        tap Stop Testing in TestFlight, leave the test in Google Play, or email
-        us and we remove you as a tester.
-      </p>
-      <p>
-        <strong>The hosted shell.</strong> The live terminal on the landing
-        page runs on <code>shell.phux.sh</code>. The basic version needs no
-        sign-in. To unlock the full Linux shell, you sign in with GitHub or
-        Google. From GitHub we read your public user ID, username, and account
-        creation date. From Google we read your account ID, name, and verified
-        email address. Your identity is kept in a signed cookie that expires
-        after 8 hours. On our side, only your provider account ID is kept, to
-        enforce usage limits: launch records are deleted after one hour and
-        daily usage totals at the end of the UTC day. Your IP address is used
-        to rate-limit launches. It is stored in keyed-hash form for rate
-        limiting, and in plain form only while a hosted session is running.
-        Hosted sessions are discarded when they end.
-      </p>
-      <p>
-        <strong>Pairing links.</strong> When a <code>phux.sh/connect</code> pairing link opens in a browser instead of the app, the page reads the
-        link on your device and removes the token from the address bar. The
-        page loads no analytics script, and our analytics record only the
-        path, never the token.
-      </p>
-    </section>
+    <WebsitePrivacy />
 
     <section aria-labelledby="never">
       <h2 id="never">what we do not do</h2>
@@ -319,6 +239,8 @@ const description =
             <tr><td>Public website counters</td><td>30 days</td></tr>
             <tr><td>Private website events</td><td>90 days</td></tr>
             <tr><td>Daily visitor records and traffic classifications</td><td>45 days</td></tr>
+            <tr><td>Optional analytics cookies and the history linked to them</td><td>13 months after your last visit, or until you withdraw</td></tr>
+            <tr><td>Daily totals (counts with no identifiers)</td><td>Indefinitely</td></tr>
             <tr><td>Beta list</td><td>Until you ask to be removed</td></tr>
             <tr><td>Hosted shell sign-in cookie</td><td>8 hours</td></tr>
             <tr><td>Hosted shell launch records and usage totals</td><td>1 hour; until the end of the UTC day</td></tr>
@@ -347,6 +269,13 @@ const description =
         <li>
           <strong>Correction.</strong> You can change synced settings in the
           app. For anything else, email us.
+        </li>
+        <li>
+          <strong>Analytics.</strong> Optional analytics are off unless you
+          choose "Allow". Change your choice any time with
+          <button type="button" class="privacy-choices" data-consent-open>Privacy choices</button>;
+          withdrawing erases the linked history. We honor Global Privacy
+          Control.
         </li>
         <li>
           <strong>No account.</strong> All terminal features work without an

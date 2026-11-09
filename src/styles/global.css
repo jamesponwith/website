@@ -392,6 +392,15 @@ a:hover {
 .foot a:hover {
   color: var(--color-fg);
 }
+.foot .privacy-choices {
+  align-self: flex-start;
+  color: var(--color-dim);
+  font-size: inherit;
+  text-align: left;
+}
+.foot .privacy-choices:hover {
+  color: var(--color-fg);
+}
 .foot-end {
   margin: 0;
   padding: 0 0 40px;

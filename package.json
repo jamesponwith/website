@@ -9,7 +9,7 @@
     "preview": "astro preview",
     "preview:vgpu": "bun run scripts/preview-vgpu.ts",
     "check": "bun run brand:check && bun run fetch-release && astro sync && bun run scripts/typecheck.ts",
-    "test": "bun test ./worker/src ./host ./src/components/terminal ./src/components/motion ./src/components/tour ./scripts/*.test.ts",
+    "test": "bun test ./worker/src ./host ./src/lib/consent.test.ts ./src/components/terminal ./src/components/motion ./src/components/tour ./scripts/*.test.ts",
     "check:links": "bun run scripts/check-links.ts",
     "verify:demo": "bun run scripts/verify-demo.ts",
     "verify:motion": "bun run scripts/verify-motion.ts",

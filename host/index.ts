@@ -149,10 +149,12 @@ export default {
       return telemetryIngest(request, env);
     }
     // Voluntary member signup (the release-updates form), TestFlight access
-    // requests for phux-mobile (host/testflight.ts), and device claim.
+    // requests for phux-mobile (host/testflight.ts), device claim, and
+    // consented browser events from the opt-in analytics card (/api/collect).
     if (
       url.pathname === "/api/join" ||
       url.pathname === "/api/beta" ||
+      url.pathname === "/api/collect" ||
       url.pathname === "/api/claim"
     ) {
       // Static imports would initialize the Effect HTTP stack on asset requests.

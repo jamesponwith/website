@@ -1,0 +1,119 @@
+---
+// The website section of the privacy policy (src/pages/privacy.astro):
+// server-side counters, private analytics, the optional opt-in analytics
+// cookies (src/lib/consent.ts, host/consent.ts), the beta list, TestFlight,
+// the hosted shell, and pairing links. Change LAST_UPDATED on the page with it.
+---
+
+<section aria-labelledby="website">
+  <h2 id="website">the website</h2>
+  <p>
+    <code>phux.sh</code> and <code>docs.phux.sh</code> run on Cloudflare.
+    The site loads no third-party analytics script and sets no analytics
+    cookie unless you choose to allow one. Its fonts load from Bunny
+    Fonts, which receives your IP address as part of that request. Two
+    kinds of measurement always run on the server side, and a third runs
+    only if you opt in.
+  </p>
+  <p>
+    <strong>Public aggregate counters.</strong> For each request, the site
+    increments hourly counters by user-agent class (for example
+    "browser" or a named AI crawler), country, hostname, response status,
+    and type of request. Page views and installer requests also count an
+    allowlisted <code>ref</code> tag and the referring site reduced to a
+    channel name, never the full address. These counters contain no IP
+    addresses, raw user agents, or cookies. They are published live at
+    <a href="/telemetry">/telemetry</a>.
+  </p>
+  <p>
+    <strong>Private analytics.</strong> Each request is also recorded in a
+    private event store. It stores the hostname and page path (never the
+    query string, except the campaign tags <code>utm_source</code>, <code>utm_medium</code>, and <code>utm_campaign</code>),
+    the referring site's hostname, country, and user-agent class, and for
+    installer downloads the operating system, CPU architecture, and
+    download tool. Visitors are counted
+    with an ID computed from your IP address and user agent under a key
+    that changes every day, so visits cannot be linked from one day to
+    the next. The IP address itself is never stored. To tell people apart
+    from AI agents, crawlers, and scanners, a summary of a visitor's day
+    (user-agent class, country, referrer type, campaign tags, and pages
+    visited; for unrecognized clients, a truncated user-agent string with
+    email addresses removed) can be sent to TypeSafe, an AI
+    classification service. The summary never includes an IP address,
+    email address, or cookie.
+  </p>
+  <p id="optional-analytics">
+    <strong>Optional analytics (opt-in).</strong> On your first visit a
+    small card asks whether you allow analytics. Until you choose, and if
+    you choose "No thanks", nothing below happens and nothing is stored on
+    your device. If you choose "Allow", the site sets two first-party
+    cookies shared by <code>phux.sh</code> and <code>docs.phux.sh</code>:
+    <code>phux_consent</code>, which remembers your choice, and
+    <code>phux_vid</code>, a random ID that is not derived from anything
+    about you. Both expire after 13 months. With that ID we can connect
+    your visits across days, so we can see where you first came from
+    (the referring site and campaign tags of the page where you allowed
+    analytics), which pages you read, how long a page stayed visible,
+    whether you copied an install command or clicked a download, and
+    which outside sites you left for (GitHub, Discord, and so on, never
+    the full address). This history is kept in the same private event
+    store, never shared, and never combined with data from other
+    companies. If your browser sends a
+    <a href="https://globalprivacycontrol.org/" target="_blank" rel="noopener">Global Privacy Control</a>
+    signal, we treat it as "No thanks" and do not ask. You can change your
+    mind at any time with <button type="button" class="privacy-choices" data-consent-open>Privacy choices</button>
+    (also in the footer). Withdrawing deletes the cookie and erases the
+    history linked to it.
+  </p>
+  <p>
+    <strong>Download counters.</strong> To count downloads we also read
+    the public totals that GitHub and npm publish for our releases and
+    packages. These are counts, not information about individuals.
+  </p>
+  <p>
+    <strong>The beta list.</strong> If you <a href="/more#beta">join the beta</a>,
+    we store your email address, the
+    date you joined, the form you used, your country, and your user-agent
+    class. We use it to email you about the beta. We do not sell or rent
+    it. The beta emails include a personal link. If you choose to open it,
+    it sets a first-party <code>phux_mid</code> cookie for one year, which
+    links your later visits on that browser to your beta membership.
+    Apart from the optional analytics cookie above, this cookie is the
+    only way the site recognizes a returning visitor, and it is only set
+    if you click that link.
+  </p>
+  <p>
+    <strong>TestFlight requests.</strong> You can join through an enabled
+    public TestFlight link without giving this site an email address; Apple
+    handles joining and installation. If you use the email form to
+    <a href="/more#testflight">request access to phux for iPhone</a>, we send
+    your email address to Apple through App Store Connect, which adds you
+    as a TestFlight tester and emails you the invite. Apple keeps tester
+    records under its own privacy policy. If you ask for the Android beta
+    instead, we add the address to the app's Google Play testing list by
+    hand, and Google handles it under its own privacy policy. We also keep
+    either request on the beta list described above. To leave the beta,
+    tap Stop Testing in TestFlight, leave the test in Google Play, or email
+    us and we remove you as a tester.
+  </p>
+  <p>
+    <strong>The hosted shell.</strong> The live terminal on the landing
+    page runs on <code>shell.phux.sh</code>. The basic version needs no
+    sign-in. To unlock the full Linux shell, you sign in with GitHub or
+    Google. From GitHub we read your public user ID, username, and account
+    creation date. From Google we read your account ID, name, and verified
+    email address. Your identity is kept in a signed cookie that expires
+    after 8 hours. On our side, only your provider account ID is kept, to
+    enforce usage limits: launch records are deleted after one hour and
+    daily usage totals at the end of the UTC day. Your IP address is used
+    to rate-limit launches. It is stored in keyed-hash form for rate
+    limiting, and in plain form only while a hosted session is running.
+    Hosted sessions are discarded when they end.
+  </p>
+  <p>
+    <strong>Pairing links.</strong> When a <code>phux.sh/connect</code> pairing link opens in a browser instead of the app, the page reads the
+    link on your device and removes the token from the address bar. The
+    page loads no analytics script, and our analytics record only the
+    path, never the token.
+  </p>
+</section>

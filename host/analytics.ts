@@ -15,7 +15,9 @@ import {
   readLimitedBody,
 } from "./analytics-runtime";
 import { inviteTester, type TestFlightEnv } from "./testflight";
+import { consentedVisitorId } from "./consent";
 
+export { CONSENT_COOKIE, VISITOR_COOKIE, consentedVisitorId } from "./consent";
 export {
   AnalyticsHttp,
   CryptoFailure,
@@ -87,6 +89,12 @@ export interface Envelope {
   tls_version?: string;
   http_version?: string;
   edge?: { ray?: string; tlsCipher?: string; ja4?: string; botScore?: number; verifiedBot?: boolean };
+  /** Random first-party id; present only with phux_consent=granted and no GPC. */
+  anon_id?: string;
+  /** kind:"client" (POST /api/collect): the consented browser event. */
+  event?: string;
+  target?: string;
+  value?: number;
   /** Allowlisted request metadata only; excludes identity/credential headers. */
   headers?: string;
   body_sample?: string;
@@ -137,13 +145,15 @@ export const buildEnvelope = Effect.fnUntraced(function*(
     host: url.hostname,
     method: request.method,
     path: url.pathname,
-    utm_source: attribution(url.searchParams.get("utm_source")),
+    // `?ref=x` launch tags count as the source when no utm_source is given.
+    utm_source: attribution(url.searchParams.get("utm_source") ?? url.searchParams.get("ref")),
     utm_medium: attribution(url.searchParams.get("utm_medium")),
     utm_campaign: attribution(url.searchParams.get("utm_campaign")),
     status: response.status,
     content_type: response.headers.get("content-type") ?? "",
     accept: request.headers.get("accept") ?? "",
     member_id: memberIdFromRequest(request) ?? undefined,
+    anon_id: consentedVisitorId(request) ?? undefined,
     demo,
   };
 });
@@ -164,7 +174,7 @@ interface TripwireCf {
  * construction (bait paths, the form honeypot), so it carries what the
  * privacy model withholds from ordinary events: raw request headers, cf ASN/
  * org/colo/TLS, the query string, and an optional posted-body sample. Member
- * identity is explicitly dropped — a trap record never joins the members
+ * and opt-in analytics identity are explicitly dropped — a trap record never joins the members
  * dataset, and identity-bearing headers are suppressed.
  */
 export const buildTripwireEnvelope = Effect.fnUntraced(function*(
@@ -179,6 +189,7 @@ export const buildTripwireEnvelope = Effect.fnUntraced(function*(
   return {
     ...base,
     member_id: undefined,
+    anon_id: undefined,
     kind: "tripwire",
     trap: init.trap.slice(0, 40),
     query: new URL(request.url).search.slice(0, 500),
@@ -588,18 +599,18 @@ function claimMessage(memberId: string, expiresAt: number): string {
   return `claim:${CLAIM_VERSION}:${memberId}:${expiresAt}`;
 }
 
-function canForward(env: AnalyticsEnv): boolean {
+export function canForward(env: AnalyticsEnv): boolean {
   return Boolean(env.ANALYTICS);
 }
 
-function attribution(value: string | null): string {
+export function attribution(value: string | null): string {
   return (value ?? "")
     .replace(/[\u0000-\u001f\u007f]/g, "")
     .trim()
     .slice(0, 80);
 }
 
-function referrerHost(value: string | null): string {
+export function referrerHost(value: string | null): string {
   if (!value) return "";
   try {
     return new URL(value).hostname.toLowerCase().slice(0, 253);

@@ -3,6 +3,7 @@ import "../../styles/global.css";
 import Head from "../Head.astro";
 import { ClientRouter } from "astro:transitions";
 import { SITE } from "../../lib/site";
+import Consent from "../Consent.astro";
 
 interface Props {
   title: string;
@@ -45,5 +46,6 @@ const { title, description, origin = SITE.docsUrl, markdown, image } = Astro.pro
   <body>
     <a class="skip" href="#docs-main">Skip to documentation</a>
     <slot />
+    <Consent />
   </body>
 </html>
