@@ -77,8 +77,12 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "scripting.md", slug: "scripting", group: "automate", order: 1 },
   { file: "agents.md", slug: "agents", group: "automate", order: 2 },
   { file: "acp.md", slug: "acp", group: "automate", order: 3 },
+  { file: "approvals.md", slug: "approvals", group: "automate", order: 2.5 },
   { file: "remote.md", slug: "remote", group: "connect", order: 0 },
   { file: "clients.md", slug: "clients", group: "connect", order: 1 },
+  { file: "native-terminal.md", slug: "native-terminal", group: "connect", order: 0.5 },
+  { file: "enterprise.md", slug: "enterprise", group: "connect", order: 2, title: "Organizations" },
+  { file: "audit.md", slug: "audit", group: "connect", order: 2.5 },
   // Hub for driving phux. A checkout without the file skips it.
   {
     file: "building.md",

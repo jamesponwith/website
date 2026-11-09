@@ -1,0 +1,204 @@
+---
+// phux for teams: early access with design partners. Keep it honest about
+// status: Team and Enterprise have no published price, and the open-source
+// core stays free and account-free.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { SITE } from "../lib/site";
+
+const CONTACT = "privacy@phall.io";
+const PILOT = `mailto:${CONTACT}?subject=${encodeURIComponent("phux pilot")}`;
+const SECURITY = `${SITE.github}/security/policy`;
+const title = `${SITE.name} — Teams`;
+const description =
+  "Govern every coding agent on every machine, with a full audit trail, and no terminal byte leaving your network. Early access with design partners.";
+
+const PLANS = [
+  { name: "Free / self-host", price: "$0", who: "Everyone", what: "Everything in the open-source core." },
+  { name: "Pro", price: "$9.99/mo or $99.99/yr", who: "Individuals", what: "Hosted relay, more servers on mobile." },
+  { name: "Team", price: "Early access, per seat", who: "Engineering teams", what: "Company sign-in, scoped grants, signed audit log, approvals." },
+  { name: "Enterprise", price: "Talk to us", who: "Larger organizations", what: "SSO/SAML/SCIM, retention, SIEM export, LTS channel, SLA, DPA." },
+];
+---
+
+<BaseLayout {title} {description}>
+  <article class="wrap teams">
+    <header class="teams-head">
+      <p class="status">Early access · design partners</p>
+      <h1>phux for teams</h1>
+      <p class="lede">
+        Govern every coding agent on every machine, with a full audit trail,
+        and no terminal byte leaving your network.
+      </p>
+      <p class="actions">
+        <a class="cta" href={PILOT}>Book a pilot</a>
+        <a class="cta ghost" href={SECURITY} target="_blank" rel="noopener">Security policy</a>
+      </p>
+    </header>
+
+    <section aria-labelledby="how">
+      <h2 id="how">how it works</h2>
+      <ul>
+        <li>
+          <strong>One sign-in.</strong> Sign in once with your company identity
+          and reach every enrolled machine.
+        </li>
+        <li>
+          <strong>Scoped grants.</strong> Group policy becomes per-host grants,
+          revoked everywhere in seconds.
+        </li>
+        <li>
+          <strong>Signed audit log.</strong> Every connection, command,
+          approval and refusal lands in a signed, hash-chained log you can
+          search and export. Agents act with a key that records which person
+          started them.
+        </li>
+        <li>
+          <strong>Approvals.</strong> Risky actions, such as kill, signal, and
+          display control, can wait for an approver.
+        </li>
+      </ul>
+    </section>
+
+    <section class="summary" aria-labelledby="trust">
+      <h2 id="trust">what stays with you</h2>
+      <p>
+        phux runs identity, policy, audit metadata and a blind relay. Your
+        machines keep the terminals, the agents and the bytes.
+      </p>
+      <p>
+        The open-source core stays free and account-free. Billing never locks
+        you out of your own server.
+      </p>
+    </section>
+
+    <section aria-labelledby="plans">
+      <h2 id="plans">plans</h2>
+      <div class="plans-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">Plan</th><th scope="col">Price</th><th scope="col">For</th><th scope="col">Includes</th></tr>
+          </thead>
+          <tbody>
+            {PLANS.map((plan) => (
+              <tr><th scope="row">{plan.name}</th><td>{plan.price}</td><td>{plan.who}</td><td>{plan.what}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="pilot">
+      <h2 id="pilot">book a pilot</h2>
+      <p>
+        We are working with a small group of design partners. Email{" "}
+        <a href={PILOT}>{CONTACT}</a>{" "}with subject "phux pilot" and tell
+        us how many machines and agents you run. Read the{" "}
+        <a href={SECURITY} target="_blank" rel="noopener">security policy</a>{" "}
+        to report a vulnerability.
+      </p>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .teams {
+    max-width: calc(var(--reading-width) + 2 * var(--page-gutter));
+    padding-block: clamp(32px, 6vw, 72px) 96px;
+  }
+  .teams-head {
+    border-bottom: 1px solid var(--color-rule);
+    padding-bottom: 24px;
+    margin-bottom: 8px;
+  }
+  .status {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--color-muted);
+    margin: 0 0 12px;
+  }
+  h1 {
+    font-size: clamp(28px, 4vw, 40px);
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+  }
+  .lede {
+    color: var(--color-muted);
+    margin: 0 0 20px;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+  }
+  section {
+    border-bottom: 1px solid var(--color-rule);
+    padding-block: 24px;
+  }
+  section:last-child {
+    border-bottom: 0;
+  }
+  h2 {
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+  }
+  p,
+  ul {
+    margin: 0 0 12px;
+  }
+  ul {
+    padding-left: 1.25em;
+  }
+  li + li {
+    margin-top: 6px;
+  }
+  .summary {
+    border: 1px solid var(--color-rule);
+    border-left: 3px solid var(--color-accent);
+    background: var(--color-surface);
+    padding: 20px;
+    margin-block: 24px;
+  }
+  .summary p:last-child {
+    margin: 0;
+  }
+  .plans-scroll {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+  th,
+  td {
+    text-align: left;
+    vertical-align: top;
+    padding: 10px 12px 10px 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  thead th {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-dim);
+  }
+  tbody th {
+    white-space: nowrap;
+  }
+  td:nth-child(2) {
+    font-family: var(--font-code);
+    font-size: 13px;
+  }
+  section a:not(.cta) {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  section a:not(.cta):hover,
+  section a:not(.cta):focus-visible {
+    text-decoration-thickness: 2px;
+  }
+</style>

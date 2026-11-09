@@ -133,7 +133,7 @@ sourcePath: "docs/orphan.md"
     const dates = pageLastmods(root);
     for (const path of [
       "/", "/brand", "/connect", "/demos", "/demos/program-status-osc7501",
-      "/more", "/phone", "/privacy", "/support", "/telemetry",
+      "/more", "/phone", "/privacy", "/support", "/teams", "/telemetry",
       "/overview", "/performance",
     ]) {
       expect(dates.get(path), path).toMatch(/^\d{4}-\d{2}-\d{2}T/);
