@@ -198,7 +198,7 @@ try {
   assert.ok(await page.locator("#beta form").isVisible(), "release signup is preserved");
   assert.equal(await page.locator("[data-copy]").count(), 2, "alternate installers preserved");
   assert.equal(await page.locator(".rune-install code").innerText(), "curl -fsSL https://phux.sh/install | sh -s -- --rune", "/more installs the Rune client");
-  assert.match(await page.locator(".rune-install p").first().innerText(), /macOS 14 or later, or Linux on x86_64 or arm64 \(glibc 2\.39\+/);
+  assert.match(await page.locator(".rune-install p").first().innerText(), /macOS 14 or later, or Linux on x86_64 or arm64\. Linux needs glibc 2\.39\+ \(Ubuntu 24\.04\+\), Vulkan, libxkbcommon-x11\. /);
   assert.deepEqual(
     await page.locator(".rune-archives a").evaluateAll(links => links.map(link => link.getAttribute("href"))),
     ["/download/rune", "/download/rune/linux-x86_64", "/download/rune/linux-aarch64"],
