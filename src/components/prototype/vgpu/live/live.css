@@ -10,7 +10,7 @@
 .live-status-dot.is-waiting{background:#a5b2bf;box-shadow:none}
 .live-pane-body{position:relative}
 .live-pane-preview{position:relative;display:block;width:100%;padding:8px 18px 16px;text-align:left;cursor:pointer;overflow:hidden}
-.live-primary :is(.live-pane-preview,.live-connection-state){height:144px}
+.live-primary :is(.live-pane-preview,.live-connection-state){height:216px}
 .live-pane-preview canvas{display:block;width:100%;height:100%;pointer-events:none;opacity:.95}
 .live-enter{position:absolute;right:17px;bottom:12px;font:12px var(--lab-mono);color:#afc8d1aa;opacity:0;transition:opacity .2s}
 .live-pane-preview:hover .live-enter,.live-pane-preview:focus-visible .live-enter{opacity:1}
@@ -41,8 +41,8 @@
 .live-command-shortcuts button:hover,.live-split:hover{background:#b8dbec10;color:#e0eff5}.live-command-shortcuts span{font-size:12px;color:#7895a5}
 .live-dialog-caption{display:flex;justify-content:space-between;gap:12px;padding:14px 22px;font:11px var(--lab-mono);color:#87a4b4}.live-dialog-caption>span:first-child{display:flex;align-items:center;gap:8px}
 .live-action-error{padding:0 22px 15px;color:#deb69d;font:12px/1.6 var(--lab-mono)}
-@media(max-width:999px){.vibe-stage.live-session-stage{padding-top:56px;align-items:start}.live-session-layout{grid-template-columns:1fr;max-width:680px;gap:24px}.live-satellite-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;grid-row:auto;min-height:172px}.live-primary :is(.live-pane-preview,.live-connection-state){height:144px}.live-primary{max-width:100%}}
-@media(max-width:560px){.vibe-stage.live-session-stage{padding:32px 18px 72px}.live-primary :is(.live-pane-preview,.live-connection-state){height:132px}.live-glass header{padding-inline:15px}.live-satellite-grid{gap:20px}.live-secondary header{padding-inline:10px;font-size:11px}.live-secondary header small{display:none}.live-secondary .live-pane-preview{height:112px;padding-inline:10px}.live-satellite-grid{min-height:152px}.live-session-layout{gap:22px}.live-terminal-dialog{width:calc(100vw - 24px);max-height:calc(100svh - 24px)}.live-terminal-dialog>header{padding-inline:9px}.live-pane-tabs{gap:0}.live-pane-tabs button{font-size:11px;padding-inline:9px}.live-terminal-target{margin:14px 12px 10px;height:32svh}.live-terminal-dialog>footer{padding-inline:12px;gap:9px;flex-wrap:wrap}.live-command-shortcuts button,.live-split{font-size:11px;padding:8px 10px;gap:10px}.live-dialog-caption{padding:12px;font-size:10px}}
+@media(max-width:999px){.vibe-stage.live-session-stage{padding-top:56px;align-items:start}.live-session-layout{grid-template-columns:1fr;max-width:680px;gap:24px}.live-satellite-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;grid-row:auto;min-height:172px}.live-primary :is(.live-pane-preview,.live-connection-state){height:200px}.live-primary{max-width:100%}}
+@media(max-width:560px){.vibe-stage.live-session-stage{padding:32px 18px 72px}.live-primary :is(.live-pane-preview,.live-connection-state){height:176px}.live-glass header{padding-inline:15px}.live-satellite-grid{gap:20px}.live-secondary header{padding-inline:10px;font-size:11px}.live-secondary header small{display:none}.live-secondary .live-pane-preview{height:112px;padding-inline:10px}.live-satellite-grid{min-height:152px}.live-session-layout{gap:22px}.live-terminal-dialog{width:calc(100vw - 24px);max-height:calc(100svh - 24px)}.live-terminal-dialog>header{padding-inline:9px}.live-pane-tabs{gap:0}.live-pane-tabs button{font-size:11px;padding-inline:9px}.live-terminal-target{margin:14px 12px 10px;height:32svh}.live-terminal-dialog>footer{padding-inline:12px;gap:9px;flex-wrap:wrap}.live-command-shortcuts button,.live-split{font-size:11px;padding:8px 10px;gap:10px}.live-dialog-caption{padding:12px;font-size:10px}}
 @media(prefers-reduced-motion:reduce){.live-enter{transition:none}}
 
 .live-reconnect{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#0b141ee8;z-index:5;font:12px/1.7 var(--lab-mono);padding:22px;text-align:center;color:#b9d1dc}.live-reconnect button{padding:10px 14px;border:1px solid #b9d4e533;border-radius:4px}
@@ -127,3 +127,25 @@ a.install-hook-copy{display:inline-flex;align-items:center;justify-content:cente
   .live-dialog-caption>span:nth-child(2){display:none}
 }
 @media(prefers-reduced-motion:reduce){.install-hook-copy{animation:none!important}.install-hook-tabs button,.install-hook-copy{transition:none}}
+
+/* Sharp pass: the panes are real terminals, so they get a real body. The light
+   stays behind them; text never sits on a blurred or transparent surface. */
+.live-session-stage .live-glass,.live-session-stage:has(.gpu-scene[data-renderer^="vgpu"]) .live-glass{border-radius:14px;background:linear-gradient(180deg,#151c23f5,#0b1116f7);backdrop-filter:none;box-shadow:inset 0 0 0 1px #d4e8f41c,inset 0 1px 0 #ffffff1f,0 1px 2px #000a,0 28px 70px -24px #000d}
+.live-session-stage .live-glass header{height:40px;padding:0 16px;border-bottom:1px solid #d4e8f412;color:#d5e3ea;font-size:12px}
+.live-session-stage .live-glass header small{letter-spacing:0;font-size:11px;color:#8ea5b1;text-transform:lowercase}
+.live-session-stage .live-pane-preview{padding:12px 16px 14px}
+.live-session-stage .live-pane-preview canvas{opacity:1}
+.live-session-stage .live-secondary .live-pane-preview{height:132px;padding:10px 14px 12px}
+.live-session-stage .live-primary>footer{height:34px;padding:0 16px;border-top:1px solid #d4e8f412;color:#8ea5b1;letter-spacing:0;font-size:11px;text-transform:lowercase}
+.live-session-stage .install-hook{padding:10px 16px 12px;border-top:1px solid #d4e8f412}
+.live-session-stage .install-hook-copy,.live-session-stage .install-hook-request button{border-radius:8px;background:#e7e2da;color:#111417}
+.live-session-stage .install-hook-tabs button{border-radius:7px;min-height:32px;padding:0 12px}
+.live-session-stage>.vibe-shade{background:linear-gradient(180deg,#0a0a0a,#0a0a0a66 22%,#0a0a0a66 72%,#0a0a0a),linear-gradient(90deg,#0a0a0a55,transparent 40%)}
+.live-session-layout{gap:16px;align-items:start}
+.live-satellite-grid{gap:16px;align-self:start}
+.live-terminal-dialog{border-radius:16px;background:linear-gradient(180deg,#151c23fa,#0b1116fc);backdrop-filter:none;box-shadow:inset 0 0 0 1px #d4e8f41c,inset 0 1px 0 #ffffff1f,0 40px 120px -20px #000}
+.live-terminal-dialog::backdrop{background:#04070ab8}
+.live-terminal-dialog>header{border-bottom:1px solid #d4e8f412}
+.live-terminal-dialog .live-pane-tabs button,.live-command-shortcuts button,.live-split{border-radius:7px}
+.live-command-shortcuts button,.live-split{background:#d4e8f40d;box-shadow:inset 0 0 0 1px #d4e8f414}
+.live-dialog-install{border-radius:8px;background:#e7e2da;color:#111417}

@@ -142,6 +142,13 @@ starts a fresh demo. Say so next to the workspace. Legacy `?hero=light` links sc
 to this section rather than replacing the homepage. No terminal/GPU/WASM JavaScript
 or demo-origin preconnect belongs in the initial viewport's resource budget.
 
+The workspace's panes are real terminals and are drawn as such: an opaque
+graphite body (`#151c23` to `#0b1116`), a 1px hairline with a lit top edge, a
+14px radius, and a ruled title bar and footer. The WebGPU light stays behind
+them. Terminal text never sits on a transparent, blurred or refracting surface,
+and the pane previews are tall enough to read. The enlarged dialog uses the
+same body over a dimmed backdrop.
+
 Below the workspace, the illustrated tour shows a server, clients, and signals
 travelling along connections.
 It autoplays only while on screen, with pause and chapter controls; reduced motion

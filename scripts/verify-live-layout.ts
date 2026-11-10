@@ -38,7 +38,7 @@ async function verifyWorkspaceLayout(hero: FrameLocator, width: number) {
   for (const pane of layout.panes) {
     assert.ok(pane.left >= -1 && pane.right <= layout.viewportWidth + 1, `terminal fits horizontally at ${width}`);
     assert.ok(pane.top >= -1 && pane.bottom <= layout.stageHeight + 1, `terminal fits vertically at ${width}`);
-    assert.ok(pane.height <= 230 + pane.controlsHeight, `terminal chrome stays compact around its inline controls at ${width}`);
+    assert.ok(pane.height <= 300 + pane.controlsHeight, `terminal chrome stays compact around its inline controls at ${width}`);
   }
 }
 
