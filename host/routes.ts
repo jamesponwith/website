@@ -25,6 +25,7 @@ export const DOCS_PREFIXES = [
   "/config",
   "/keys",
   "/tmux-import",
+  "/migrate",
   "/themes",
   "/status-bar",
   "/hooks",

@@ -65,6 +65,7 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "config.md", slug: "config", group: "customize", order: 0 },
   { file: "keys.md", slug: "keys", group: "customize", order: 1 },
   { file: "tmux-import.md", slug: "tmux-import", group: "customize", order: 2 },
+  { file: "migrate.md", slug: "migrate", group: "customize", order: 2.5 },
   { file: "themes.md", slug: "themes", group: "customize", order: 3 },
   { file: "status-bar.md", slug: "status-bar", group: "customize", order: 4 },
   { file: "hooks.md", slug: "hooks", group: "customize", order: 5 },
