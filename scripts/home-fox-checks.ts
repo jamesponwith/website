@@ -62,7 +62,7 @@ export async function verifyFox(page: Page) {
   await page.waitForTimeout(300);
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   assert.equal(await fox.getAttribute("data-look"), "0 0", "tab visibility changes settle the fox");
-  await page.locator(".workflow-proof").scrollIntoViewIfNeeded();
+  await page.locator(".boundary").scrollIntoViewIfNeeded();
   await page.waitForTimeout(100);
   await page.mouse.move(20, 200);
   await page.waitForTimeout(200);

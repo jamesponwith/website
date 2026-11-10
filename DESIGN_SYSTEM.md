@@ -79,22 +79,31 @@ to center on pointer exit. Reduced motion, hidden tabs and offscreen art settle
 to a static pose. No WebGL, animation loop at rest or extra framework is needed.
 On phones the fox sits below the download, above the real product comparison.
 
-The headline leads with the job: **Run agents. Stay in control.** The supporting
-line is **Your agents. Your machines. One workspace.** `HOME` in `src/lib/site.ts`
-owns the marketing headline/metadata; `SITE.tagline` retains the precise technical
-category for documentation. The share card uses the same outcome and real captures.
-Keep the download and the beginning of the product screenshot within the first screen.
+The headline says what phux is: **A terminal multiplexer that knows what your
+agents are doing.** One paragraph (`HOME.lede`) follows it. There is no eyebrow
+and no second slogan. `HOME` in `src/lib/site.ts` owns the headline, lede and
+metadata; `SITE.tagline` retains the precise technical category for
+documentation. The share card uses the same headline and real captures. Keep the
+download and the beginning of the product screenshot within the first screen.
 
-`WorkflowProof.astro` shows three short steps: delegate the outcome, unblock the
-work, and review the result. A concrete task brief makes the Crew loop tangible.
-Use the existing neutral home tokens, open typographic grid, numbered entries, and
-real commands. No invented live activity, customer counts, performance rankings, or
-automatic sandbox claims. A native disclosure keeps the read/wait/prompt command
-example optional. The product-fit section surfaces **One lead. A visible crew.**
-with Crew's source-checkout/compatible-build/Python/agent requirements. Do not add
-a competitor pitch or feature matrix. Never use “keep your editor” or editor
-adoption as the homepage proposition. This content is plain HTML, with no new hydration,
-animation, or initial requests. The fox, install behavior, and lazy demo stay intact.
+The landing sets its text in Inter (`public/fonts/InterVariable.woff2`, declared
+as `Phux Inter` so the reader's local-only `Inter` fallback stays local; the
+latin variable subset, preloaded on the landing only) so the page reads the
+same on every platform. Headings are weight 550 to 600 with -.03em to -.04em
+tracking; do not tighten further, letters collide. Body copy on the landing is
+16px in `--color-muted`. Paper Mono stays for commands and output.
+
+`Exhibits.astro` shows what phux does as four rows: a short statement and two
+or three plain sentences on the left, and on the right what phux prints. The
+transcripts are captured from a real server and typeset in one panel recipe
+(`#101316`, 1px rule, 12px radius, Paper Mono 13.5px). Prompts are dim green,
+output is dim, and at most one line per panel takes the amber attention color:
+the line the row is about. No window chrome, traffic lights, typing animation
+or invented activity. The fourth row is Crew, with its requirements visible
+next to its setup link. Do not add a competitor pitch or feature matrix. Never
+use “keep your editor” or editor adoption as the homepage proposition. This
+content is plain HTML, with no new hydration, animation, or initial requests.
+The fox, install behavior, and lazy demo stay intact.
 
 The primary install action follows the visitor's OS, not viewport width.
 macOS keeps the Mac download; Linux opens the CLI installer; Windows leads to

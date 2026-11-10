@@ -6,7 +6,7 @@ import ClientComparison from "../components/ClientComparison.astro";
 import Fox from "../components/fox/Fox.astro";
 import MobileAccessForm from "../components/MobileAccessForm.astro";
 import LiveWorkspaceSection from "../components/LiveWorkspaceSection.astro";
-import WorkflowProof from "../components/WorkflowProof.astro";
+import Exhibits from "../components/Exhibits.astro";
 import { HOME, SITE, docsHref } from "../lib/site";
 import { cliInstall, desktopInstall, installTargets, linuxArchLabels, linuxArches, runeDockNote, runeDownload, runeInstall, runeLinuxDownload } from "../lib/install";
 import release from "../lib/release.json";
@@ -22,11 +22,9 @@ const fallback = installActions.unknown;
     <section class="hero" aria-labelledby="product-name">
       <div class="hero-intro">
         <div class="hero-copy">
-        <p class="hero-eyebrow">A workspace for agent work</p>
-        <h1 id="product-name">Run agents.<br />Stay in control.</h1>
+        <h1 id="product-name">{HOME.headline}</h1>
         <div class="hero-decision">
-          <p class="hero-description">Your agents. Your machines. One workspace.</p>
-          <p class="hero-body">Give agents the work. See what’s running, unblock decisions, and review the result—across your machines.</p>
+          <p class="hero-description">{HOME.lede}</p>
           <div class="download-actions">
             <a class="download-primary" data-device-install href={fallback.href}><span data-device-label>{fallback.label}</span> <span data-device-icon aria-hidden="true">{fallback.icon}</span></a>
             <a class="try-link" href="#live-workspace" aria-label="Open the browser demo">Try it first <span aria-hidden="true">↗</span></a>
@@ -92,14 +90,14 @@ const fallback = installActions.unknown;
       <ClientComparison />
     </section>
 
-    <WorkflowProof />
+    <Exhibits />
   </div>
 
   <LiveWorkspaceSection />
 
   <section class="closing home" aria-labelledby="closing-title">
     <div class="closing-copy">
-      <h2 id="closing-title">Give your agents a workspace.<br />Keep the controls.</h2>
+      <h2 id="closing-title">Start with one command.</h2>
       <p class="closing-command"><span class="install-prompt" aria-hidden="true">$</span> <code>{cliInstall}</code></p>
       <a class="download-final" data-device-install href={fallback.href}><span data-device-label>{fallback.label}</span> <span data-device-icon aria-hidden="true">{fallback.icon}</span></a>
       <a class="closing-platforms" href={docsHref("/installation")}>All platforms ↗</a>
@@ -170,17 +168,15 @@ const fallback = installActions.unknown;
   .hero-intro { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; gap: 12px; margin-bottom: 32px; }
   .hero-copy { position: relative; z-index: 1; padding-block: 22px; }
   .hero-art { margin: -24px -38px -20px -36px; pointer-events: none; overflow: clip; }
-  .hero-eyebrow { margin: 0 0 18px; color: var(--color-muted); font-size: 12px; letter-spacing: .015em; }
-  h1 { margin: 0 0 18px; color: #e7e2da; font-size: clamp(44px, 5.5vw, 70px); line-height: 1.02; font-weight: 500; letter-spacing: -.06em; }
-  .hero-description { margin: 0 0 12px; color: #bdc2be; font-size: clamp(16px, 1.5vw, 19px); line-height: 1.45; letter-spacing: -.015em; }
-  .hero-body { margin: 0 0 18px; max-width: 62ch; color: #9ca79f; font-size: 15px; line-height: 1.5; }
+  h1 { margin: 0 0 22px; max-width: 15ch; color: #f0ece4; font-size: clamp(40px, 4.5vw, 60px); line-height: 1.04; font-weight: 600; letter-spacing: -.04em; text-wrap: balance; }
+  .hero-description { margin: 0 0 26px; max-width: 44ch; color: #aeb7b0; font-size: clamp(16px, 1.4vw, 18px); line-height: 1.55; }
   .download-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; }
   .download-primary, .download-final { display: inline-flex; align-items: center; justify-content: center; gap: 28px; min-height: 56px; padding: 0 24px; border: 1px solid #efeadf; border-radius: 8px; background: #e7e2da; color: #171a1e; font-size: 14px; font-weight: 650; line-height: 1.2; box-shadow: 0 1px #fff8 inset, 0 5px 20px #0003; transition: background 160ms, transform 160ms, box-shadow 160ms; }
   .download-primary:hover, .download-final:hover { background: #fffaf2; color: #171a1e; transform: translateY(-1px); box-shadow: 0 1px #fff inset, 0 7px 28px #0005; }
   [data-device-icon] { font-size: 20px; font-weight: 400; }
   .try-link { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; color: #adb5b0; font-size: 13px; }
   .try-link:hover { color: #f0ebe3; }
-  .closing-command code { color: #dce4dc; font-size: 11px; overflow-wrap: anywhere; }
+  .closing-command code { color: #dce4dc; font-size: 14px; overflow-wrap: anywhere; }
   .download-note { margin: 12px 0 0; color: #8d9692; font-size: 11px; letter-spacing: .01em; }
   .install-options { margin-top: 8px; }
   .install-options > summary { width: fit-content; min-height: 44px; display: flex; align-items: center; gap: 10px; color: #aab2ad; font-size: 12px; cursor: pointer; list-style: none; }
@@ -217,7 +213,7 @@ const fallback = installActions.unknown;
   .release-links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 10px 0 0; color: #8f9c92; font-size: 10px; }
   .release-links a { display: inline-flex; align-items: center; min-height: 32px; }
   .closing { display: flex; align-items: center; justify-content: space-between; gap: 40px; margin-top: 100px; padding-block: 62px; border-top: 1px solid #c8d0c025; border-bottom: 1px solid #c8d0c025; }
-  .closing h2 { margin: 0; color: #e7e2da; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; font-weight: 500; letter-spacing: -.05em; }
+  .closing h2 { margin: 0; color: #f0ece4; font-size: clamp(30px, 3.6vw, 46px); line-height: 1.1; font-weight: 600; letter-spacing: -.035em; }
   .closing-command { display: flex; gap: 8px; align-items: baseline; margin: 18px 0 22px; color: #dce4dc; font-size: 13px; line-height: 1.5; }
   .closing-platforms { display: inline-flex; align-items: center; min-height: 44px; margin-left: 24px; color: #a8b8ad; font-size: 12px; }
   .closing-fox { flex: none; width: 280px; height: 280px; object-fit: contain; }
@@ -233,8 +229,7 @@ const fallback = installActions.unknown;
     .home { padding-inline: 28px; }
     .hero-intro { gap: 0; grid-template-columns: 1.1fr 1fr; }
     .hero-art { margin-inline: -36px -20px; }
-    h1 { font-size: clamp(40px, 5.4vw, 60px); }
-    .hero-description { font-size: 15px; }
+    h1 { font-size: clamp(36px, 4.8vw, 48px); }
     .closing-fox { width: 220px; height: 220px; }
   }
   @media (max-width: 650px) {
@@ -242,12 +237,9 @@ const fallback = installActions.unknown;
     .hero { padding-top: 18px; }
     .hero-intro { grid-template-columns: 1fr; gap: 0; margin-bottom: 24px; }
     .hero-copy { padding-block: 12px 0; }
-    .hero-art { width: min(100%, 340px); margin: -20px auto -20px; }
-    h1 { font-size: clamp(36px, 10.2vw, 56px); }
-    .hero-eyebrow { margin-bottom: 12px; font-size: 11px; }
-    .hero-description { margin-bottom: 10px; font-size: 16px; }
-    .hero-body { margin-bottom: 14px; font-size: 14px; line-height: 1.45; }
-    h1 { margin-bottom: 10px; }
+    .hero-art { width: min(100%, 340px); margin: -28px auto -24px; }
+    h1 { max-width: none; margin-bottom: 12px; font-size: clamp(27px, 8.4vw, 42px); }
+    .hero-description { margin-bottom: 16px; font-size: clamp(15px, 4.2vw, 16px); line-height: 1.5; }
     .download-actions { gap: 12px; }
     .download-primary { min-height: 52px; gap: 16px; padding-inline: 16px; }
     .download-note { margin-top: 10px; }

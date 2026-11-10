@@ -37,8 +37,8 @@ export async function verifyStaticHome(browser: Browser, base: string) {
   assert.equal(await staticPage.locator(".download-primary").getAttribute("href"), "https://docs.phux.sh/installation", "the no-JS fallback is a real install guide");
   assert.ok(await staticPage.locator(".fox-poster").isVisible(), "the fox remains visible without JavaScript");
   assert.equal((await staticPage.getByRole("heading", { level: 1 }).innerText()).replace(/\s+/g, " ").trim(), HOME.headline);
-  assert.equal((await staticPage.locator(".hero-description").innerText()).trim(), "Your agents. Your machines. One workspace.");
-  assert.equal(await staticPage.locator(".workflow-grid article").count(), 3, "the work loop does not require hydration");
+  assert.equal((await staticPage.locator(".hero-description").innerText()).trim(), HOME.lede);
+  assert.equal(await staticPage.locator(".exhibit pre").count(), 3, "the transcripts do not require hydration");
   assert.ok(await staticPage.getByRole("link", { name: "Set up Crew", exact: true }).isVisible(), "Crew setup works without JavaScript");
   assert.match(await staticPage.locator(".product-fit").innerText(), /With Crew/);
   await staticPage.locator(".install-options > summary").click();
@@ -46,9 +46,6 @@ export async function verifyStaticHome(browser: Browser, base: string) {
   assert.equal(await staticPage.getByRole("slider").count(), 0, "no-JS does not offer an inert slider");
   assert.ok(await staticPage.locator(".client-tui").isVisible() && await staticPage.locator(".client-gui").isVisible(), "no-JS shows both static client previews");
   assert.equal(await staticPage.locator("iframe").count(), 0, "no-JS never downloads the live app");
-  await staticPage.locator(".control-proof > summary").click();
-  assert.ok(await staticPage.locator(".control-proof pre").isVisible(), "technical tools remain available without JavaScript");
-  await staticPage.locator(".control-proof > summary").click();
   await staticPage.locator("#connection-details > summary").click();
   assert.equal(await staticPage.getByRole("link", { name: "Open demo", exact: true }).getAttribute("href"), "/embed");
   assert.match(await staticPage.locator(".tour-terminal").innerText(), /Finished/, "no-JS tour shows a settled scene");

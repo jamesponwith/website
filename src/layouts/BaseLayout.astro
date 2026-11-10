@@ -30,6 +30,7 @@ const navigation = minimal ? [
 <html lang="en" data-design={SITE.designMode} data-home={minimal || undefined}>
   <head>
     <Head title={title} description={description} type="website" />
+    {minimal && <link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />}
     <slot name="head" />
   </head>
   <body>
@@ -133,6 +134,9 @@ const navigation = minimal ? [
     --content-wide: 1240px;
     --page-gutter: clamp(20px, 3vw, 40px);
     --fox-halo: #bacab309;
+    --font-reading: "Phux Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
+    font-feature-settings: "cv11", "ss03";
+    -webkit-font-smoothing: antialiased;
   }
   :global(html[data-home]) body { background: radial-gradient(ellipse 1000px 600px at 85% 0%, #71614a12, transparent 70%), #0c0f11; }
   :global(html[data-home]) .nav { height: 82px; border-bottom: 1px solid #c8d0c01a; }

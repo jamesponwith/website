@@ -17,16 +17,20 @@ Site chrome, page titles, demos, and the generated social card read that identit
 Changing it does not rename commands, packages, domains, protocol identifiers,
 or the canonical documentation. A product rename must migrate those deliberately.
 
-The homepage's marketing outcome is **Run agents. Stay in control.** The buyer's
-job is operating agent work: delegate an outcome, supervise execution, unblock
-decisions, review evidence, and accept the result. Agents are the workforce;
-the person is not assumed to be manually implementing the code. Do not position
-phux as an editor alternative or make editor preference the reason to choose it.
-Editing capabilities remain factual reference information, not the sales frame.
+The homepage headline is **A terminal multiplexer that knows what your agents
+are doing.** It states what the product is. The page then shows it: real
+captures of the clients, and the commands with the output phux prints. Write
+the landing the way the documentation is written: plain statements a reader can
+check. No slogans, no stacked taglines, no invented activity, no claims the
+transcripts or the docs cannot back.
 
-Show running
-agents, noticing a blocked pane, reviewing changes, using remote compute, and giving
-agents controls before explaining the server. `HOME` owns this presentation;
+The reader runs coding agents in terminals and wants to know which one needs
+them, drive terminals from scripts, and reach other machines. Do not position
+phux as an editor alternative or make editor preference the reason to choose
+it. Editing capabilities remain factual reference information.
+
+Show noticing a blocked agent, running a command in a pane, and adding a
+machine before explaining the server. `HOME` owns this presentation;
 `SITE.tagline` remains the technical identity used by documentation.
 
 Explain useful behavior before resource kinds and wire layers. Distinguish
@@ -137,19 +141,23 @@ methodology link. Do not hide conditions behind tooltips.
 
 ## Product landing and demo
 
-The landing at `src/pages/index.astro` stays minimal: a short top bar, an
-outcome-led headline with a direct live-demo link, one product tour with its
-sandbox invitation, a short delegate/unblock/review loop, and the floating CLI / Desktop
-install switcher below the tour. Desktop is the Phux Rune DMG (`/download/rune`, with the curl
-installer as the alternative). Desktop and terminal installs name their actual
-platform requirements, including the native Windows client's WSL 2 coordinator.
-Phone browsers retain TestFlight/Android beta access rather than a Mac download.
-The release-update signup lives on `/more`.
-Show a concrete task for a configured Crew lead, not an essay or a competitor matrix.
-Keep technical commands in an optional disclosure. Label the example honestly;
-do not manufacture live activity or completed work. The first-party Crew setup
-requirements remain visible. Existing technical comparison documents stay separate
-from the agent-work story.
+The landing at `src/pages/index.astro` stays minimal: a short top bar, the
+headline and one paragraph with a direct live-demo link, the TUI/desktop
+capture, four exhibits (agents, scripting, machines, Crew), the browser demo,
+and the floating CLI / Desktop install switcher. Desktop is the Phux Rune DMG
+(`/download/rune`, with the curl installer as the alternative). Desktop and
+terminal installs name their actual platform requirements, including the native
+Windows client's WSL 2 coordinator. Phone browsers retain TestFlight/Android
+beta access rather than a Mac download. The release-update signup lives on
+`/more`.
+
+Each exhibit pairs a statement with a transcript. A transcript is output phux
+actually printed; recapture it from a disposable server (a temp `--socket`,
+never the installed one) when the CLI's wording changes, and keep the session
+names neutral. Commands with no captured output are shown as commands only. The
+Crew exhibit keeps its concrete example task and its setup requirements next to
+the setup link. Existing technical comparison documents stay separate from the
+landing.
 
 `<HeroDemo client:load>` renders the product tour and owns the hosted
 terminal dialog. The tour (`src/components/tour/`) is a scripted
