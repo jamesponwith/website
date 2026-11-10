@@ -17,12 +17,15 @@ Site chrome, page titles, demos, and the generated social card read that identit
 Changing it does not rename commands, packages, domains, protocol identifiers,
 or the canonical documentation. A product rename must migrate those deliberately.
 
-The homepage headline is **A terminal multiplexer that knows what your agents
-are doing.** It states what the product is. The page then shows it: real
-captures of the clients, and the commands with the output phux prints. Write
-the landing the way the documentation is written: plain statements a reader can
-check. No slogans, no stacked taglines, no invented activity, no claims the
-transcripts or the docs cannot back.
+The homepage headline is **Oh good, another terminal multiplexer for agents.**
+There are a lot of these, and saying so is more honest and more memorable than
+a category claim every one of them makes. The lede carries the name pun ("This
+one gives a phux") and then states what phux does. Err toward the joke in the
+headline, the lede and the share card, and nowhere else: below the first
+paragraph the page shows real captures and the commands with the output phux
+prints, written as plain statements a reader can check. No stacked taglines, no
+invented activity, no claims the transcripts or the docs cannot back, and no
+naming or dunking on the other multiplexers.
 
 The reader runs coding agents in terminals and wants to know which one needs
 them, drive terminals from scripts, and reach other machines. Do not position

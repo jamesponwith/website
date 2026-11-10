@@ -18,13 +18,13 @@ export const SITE = {
   designMode: "terminal",
   // Names the /og.png artwork. Link previews cache by URL, so change this
   // whenever src/pages/og.png.ts draws a different picture.
-  previewArtwork: "knows-your-agents",
+  previewArtwork: "oh-good-another",
   // Set when the WS demo backend is deployed. When empty the terminal island
   // renders the static poster + a "coming online" state instead of dialing out.
   demoWsUrl: import.meta.env.PUBLIC_PHUX_DEMO_WS ?? "",
 } as const;
 
-const headline = "A terminal multiplexer that knows what your agents are doing.";
+const headline = "Oh good, another terminal multiplexer for agents.";
 
 /**
  * Marketing leads with the job; documentation retains the precise product category.
@@ -33,7 +33,7 @@ const headline = "A terminal multiplexer that knows what your agents are doing."
  */
 export const HOME = {
   headline,
-  lede: "Shells and agents keep running in a background server. See which one is working, idle, or waiting on you, then step in from the terminal, the desktop app, or a script.",
+  lede: "We know. This one gives a phux: it keeps your agents running, tells you which one is waiting on you, and lets a script do anything you can.",
   title: `${name} — a terminal multiplexer for AI coding agents`,
   description: "A terminal multiplexer for AI coding agents. See which agent is working, idle, or waiting on you, and drive any terminal from code, on your own machines.",
 } as const;

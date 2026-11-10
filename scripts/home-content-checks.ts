@@ -24,7 +24,7 @@ export async function verifyHomeContent(page: Page) {
   assert.equal((await page.locator("#workspace-title").innerText()).trim(), "Browser demo");
   assert.equal((await page.locator(".workspace-heading p").innerText()).trim(), "A disposable phux shell in your browser.");
   assert.equal((await page.locator(".closing-platforms").innerText()).trim(), "All platforms ↗");
-  assert.equal(HOME.headline, "A terminal multiplexer that knows what your agents are doing.");
+  assert.equal(HOME.headline, "Oh good, another terminal multiplexer for agents.");
   assert.equal(await page.title(), HOME.title);
   assert.equal(HOME.title, "phux — a terminal multiplexer for AI coding agents");
   assert.match(HOME.title, /a terminal multiplexer for AI coding agents/);

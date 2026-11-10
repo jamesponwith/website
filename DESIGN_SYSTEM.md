@@ -79,9 +79,10 @@ to center on pointer exit. Reduced motion, hidden tabs and offscreen art settle
 to a static pose. No WebGL, animation loop at rest or extra framework is needed.
 On phones the fox sits below the download, above the real product comparison.
 
-The headline says what phux is: **A terminal multiplexer that knows what your
-agents are doing.** One paragraph (`HOME.lede`) follows it. There is no eyebrow
-and no second slogan. `HOME` in `src/lib/site.ts` owns the headline, lede and
+The headline is the joke: **Oh good, another terminal multiplexer for agents.**
+One paragraph (`HOME.lede`) owns up to it ("This one gives a phux") and then
+says what phux does. There is no eyebrow and no second slogan; the joke is told
+once and everything below it is plain. `HOME` in `src/lib/site.ts` owns the headline, lede and
 metadata; `SITE.tagline` retains the precise technical category for
 documentation. The share card uses the same headline and real captures. Keep the
 download and the beginning of the product screenshot within the first screen.
