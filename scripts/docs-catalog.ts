@@ -76,6 +76,7 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "agent-quickstart.md", slug: "agent-quickstart", group: "automate", order: 0 },
   { file: "scripting.md", slug: "scripting", group: "automate", order: 1 },
   { file: "agents.md", slug: "agents", group: "automate", order: 2 },
+  { file: "agent-skill.md", slug: "agent-skill", group: "automate", order: 2.2 },
   { file: "acp.md", slug: "acp", group: "automate", order: 3 },
   { file: "approvals.md", slug: "approvals", group: "automate", order: 2.5 },
   { file: "remote.md", slug: "remote", group: "connect", order: 0 },

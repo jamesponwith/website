@@ -38,6 +38,7 @@ export const DOCS_PREFIXES = [
   "/agent-waiting",
   "/terminal-mcp",
   "/agents",
+  "/agent-skill",
   "/acp",
   "/approvals",
   "/remote",
