@@ -22,6 +22,7 @@ export const DOCS_PREFIXES = [
   "/getting-started",
   "/concepts",
   "/compare",
+  "/roadmap",
   "/config",
   "/keys",
   "/tmux-import",

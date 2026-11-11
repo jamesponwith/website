@@ -62,6 +62,7 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "getting-started.md", slug: "getting-started", group: "start", order: 3 },
   { file: "concepts.md", slug: "concepts", group: "start", order: 4 },
   { file: "compare.md", slug: "compare", group: "start", order: 5 },
+  { file: "roadmap.md", slug: "roadmap", group: "start", order: 6 },
   { file: "config.md", slug: "config", group: "customize", order: 0 },
   { file: "keys.md", slug: "keys", group: "customize", order: 1 },
   { file: "tmux-import.md", slug: "tmux-import", group: "customize", order: 2 },
