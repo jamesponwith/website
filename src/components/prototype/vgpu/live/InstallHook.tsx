@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { SITE } from "../../../../lib/site";
 import { desktopFirstOpen, installTargets, iosDownload, runeDownload, runeInstall, type InstallTarget } from "../../../../lib/install";
 import { initialPhone, phones, wireBetaRequest, type Phone } from "../../../../lib/beta";
-import type { HookMoment } from "./install-hook";
 import "../../../../styles/mobile-access.css";
 
 const canShare = () => typeof navigator!=="undefined" && typeof navigator.share==="function" && matchMedia("(hover: none)").matches;
@@ -29,7 +28,7 @@ function BetaRequest({phone,onSwitch}:{phone:Phone;onSwitch:()=>void}) {
 }
 
 /** Install controls; explanatory detail stays in the installation guide. */
-export default function InstallHook({moment,onCopy,hookRef,copyRef}:{moment:HookMoment;onCopy:()=>void;hookRef:RefObject<HTMLElement|null>;copyRef:RefObject<HTMLButtonElement|null>}) {
+export default function InstallHook() {
   const [target,setTarget]=useState<InstallTarget>(installTargets[0]);
   // Rendered as iPhone first, then the visitor's own phone once hydrated.
   const [phone,setPhone]=useState<Phone>("ios");
@@ -54,7 +53,7 @@ export default function InstallHook({moment,onCopy,hookRef,copyRef}:{moment:Hook
   const copy=async(text:string)=>{
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);setStatus("Copied.");onCopy();
+      setCopied(true);setStatus("Copied.");
       clearTimeout(reset.current);reset.current=setTimeout(()=>setCopied(false),1800);
     } catch {
       // Leave the whole command selected so ⌘C / long-press still works.
@@ -64,10 +63,10 @@ export default function InstallHook({moment,onCopy,hookRef,copyRef}:{moment:Hook
   };
   // From a phone, the computer is the real destination: send it the command or the download.
   const share=async()=>{
-    try {await navigator.share(desktop?{title:"Phux Rune for Mac",url:new URL(runeDownload,SITE.url).href}:{title:"Install phux",text:command,url:SITE.url});onCopy();}
+    try {await navigator.share(desktop?{title:"Phux Rune for Mac",url:new URL(runeDownload,SITE.url).href}:{title:"Install phux",text:command,url:SITE.url});}
     catch {/* The visitor dismissed the share sheet. */}
   };
-  return <section ref={hookRef} className="install-hook" data-moment={moment} aria-label="Install phux">
+  return <section className="install-hook" aria-label="Install phux">
     <div className="install-hook-tabs" role="group" aria-label="Choose an install">
       {installTargets.map((item,index)=><button key={item.id} type="button" aria-pressed={item.id===target.id} onClick={()=>choose(item)} onKeyDown={event=>step(event,index)}>{label(item)}</button>)}
     </div>
@@ -75,17 +74,17 @@ export default function InstallHook({moment,onCopy,hookRef,copyRef}:{moment:Hook
       <div className="install-hook-line install-hook-download">
         <span className="install-hook-prompt" aria-hidden="true">↓</span>
         <span className="install-hook-what">Phux for Apple-silicon Mac</span>
-        <a className="install-hook-copy" href={runeDownload} onClick={onCopy}>Download</a>
+        <a className="install-hook-copy" href={runeDownload}>Download</a>
       </div>
       <p className="install-hook-status">
         <span role="status" aria-live="polite">{status||desktopFirstOpen}</span>
-        <button ref={copyRef} type="button" className="install-hook-alt" onClick={()=>void copy(runeInstall)} aria-label="Copy the Rune install command">{copied?"Copied ✓":"Terminal install"}</button>
+        <button type="button" className="install-hook-alt" onClick={()=>void copy(runeInstall)} aria-label="Copy the Rune install command">{copied?"Copied ✓":"Terminal install"}</button>
       </p>
     </>:<>
       <div className="install-hook-line" data-copied={copied}>
         <span className="install-hook-prompt" aria-hidden="true">$</span>
         <code ref={code} onClick={()=>void copy(command)}>{command}</code>
-        <button ref={copyRef} type="button" className="install-hook-copy" onClick={()=>void copy(command)} aria-label={`Copy the ${target.label} install command`}>{copied?"Copied ✓":"Copy"}</button>
+        <button type="button" className="install-hook-copy" onClick={()=>void copy(command)} aria-label={`Copy the ${target.label} install command`}>{copied?"Copied ✓":"Copy"}</button>
       </div>
       <p className="install-hook-status" role="status" aria-live="polite">{status}</p>
     </>}

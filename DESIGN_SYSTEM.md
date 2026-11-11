@@ -142,12 +142,23 @@ starts a fresh demo. Say so next to the workspace. Legacy `?hero=light` links sc
 to this section rather than replacing the homepage. No terminal/GPU/WASM JavaScript
 or demo-origin preconnect belongs in the initial viewport's resource budget.
 
-The workspace's panes are real terminals and are drawn as such: an opaque
-graphite body (`#151c23` to `#0b1116`), a 1px hairline with a lit top edge, a
-14px radius, and a ruled title bar and footer. The WebGPU light stays behind
-them. Terminal text never sits on a transparent, blurred or refracting surface,
-and the pane previews are tall enough to read. The enlarged dialog uses the
-same body over a dimmed backdrop.
+The workspace is one glass window holding the real phux client, used where it
+sits. A visitor clicks a pane and types; a split divides the same window. There
+is no dialog, no preview and no copy of the canvas: the multiplexer's own layout
+is the layout. The phux client paints text on a transparent canvas and publishes
+each pane's cell rectangle; the page draws the hairline dividers and the focused
+pane's tile under it from that geometry, and never guesses one.
+
+The window is dark tinted glass over the WebGPU light (`backdrop-filter` blur, a
+1px hairline, a lit top edge, a 16px radius), and the terminal area adds a
+darker wash so text stays readable at its native size. Glyphs are never scaled:
+the grid is fitted in whole cells. The terminal area has one fixed height per
+breakpoint (408px, 296px at 700px and below) in every phase, so connecting does
+not move the page. The title bar carries the pane controls (split right, split
+down, close); the footer offers three commands to run and the full-shell link;
+install controls are the tray at the bottom of the same window. An untouched
+demo runs its intro and makes one split when there is room for two readable
+panes; the first pointer or key press ends all automation.
 
 Below the workspace, the illustrated tour shows a server, clients, and signals
 travelling along connections.

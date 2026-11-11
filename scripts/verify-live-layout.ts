@@ -21,25 +21,23 @@ const baseline = process.env.GEOMETRY_BASELINE === "1";
 const artifacts = new URL("../.home-check/", import.meta.url).pathname;
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 async function verifyWorkspaceLayout(hero: FrameLocator, width: number) {
-  const layout = await hero.locator(".live-session-stage").evaluate(async root => {
+  const layout = await hero.locator(".live-stage").evaluate(async root => {
     await new Promise(requestAnimationFrame);
     await new Promise(requestAnimationFrame);
-    const stage = root.getBoundingClientRect();
-    const panes = [...root.querySelectorAll(".live-glass")].map(node => {
-      const box = node.getBoundingClientRect();
-      const controlsHeight = node.querySelector(".install-hook")?.getBoundingClientRect().height ?? 0;
-      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, height: box.height, controlsHeight };
-    });
-    const satellites = root.querySelector(".live-satellite-grid")!;
-    return { panes, emptySatellites: satellites.childElementCount === 0, satelliteDisplay: getComputedStyle(satellites).display, stageHeight: stage.height, viewportHeight: innerHeight, viewportWidth: innerWidth };
+    const box = (node: Element) => { const { left, right, top, bottom, height } = node.getBoundingClientRect(); return { left, right, top, bottom, height }; };
+    const frame = root.querySelector(".live-window")!;
+    return { stage: box(root), frame: box(frame), screen: box(frame.querySelector(".live-screen")!), viewportHeight: innerHeight, viewportWidth: innerWidth };
   });
-  assert.ok(layout.stageHeight <= layout.viewportHeight + 1, `iframe contains the full workspace at ${width}`);
-  if (layout.emptySatellites) assert.equal(layout.satelliteDisplay, "none", "unallocated terminals do not reserve a blank row");
-  for (const pane of layout.panes) {
-    assert.ok(pane.left >= -1 && pane.right <= layout.viewportWidth + 1, `terminal fits horizontally at ${width}`);
-    assert.ok(pane.top >= -1 && pane.bottom <= layout.stageHeight + 1, `terminal fits vertically at ${width}`);
-    assert.ok(pane.height <= 300 + pane.controlsHeight, `terminal chrome stays compact around its inline controls at ${width}`);
-  }
+  assert.ok(layout.stage.height <= layout.viewportHeight + 1, `iframe contains the full workspace at ${width}`);
+  assert.ok(layout.frame.left >= -1 && layout.frame.right <= layout.viewportWidth + 1, `window fits horizontally at ${width}`);
+  assert.ok(layout.frame.top >= -1 && layout.frame.bottom <= layout.stage.height + 1, `window fits vertically at ${width}`);
+  // The terminal keeps one height in every phase, so connecting never moves the page.
+  assert.equal(layout.screen.height, width <= 700 ? 296 : 408, `terminal height is fixed at ${width}`);
+}
+
+async function assertCount(hero: FrameLocator, count: number) {
+  for (let i = 0; i < 100 && await hero.locator(".live-tile").count() !== count; i++) await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(await hero.locator(".live-tile").count(), count, "closing a pane removes exactly one");
 }
 
 try {
@@ -65,10 +63,10 @@ try {
     const hero = page.frameLocator("#home-light iframe");
     await hero.locator(".install-hook").waitFor();
     assert.equal(await hero.locator(".install-hook-lede, .install-hook-proof, .live-session-hint").count(), 0, "no marketing prose around the controls");
-    assert.equal(await hero.locator(".live-primary > .install-hook").count(), 1, "install controls belong to the terminal frame");
-    assert.equal(await hero.locator(".live-session-layout > .install-hook").count(), 0, "no external CTA block");
-    assert.equal(await hero.locator(".live-pane-body .install-hook").count(), 0, "terminal connection overlays cannot cover the install controls");
-    if (process.env.HERO_LIVE === "1") await hero.locator('.live-session-stage[data-phase="live"] .live-secondary canvas[data-renderer]').first().waitFor({ timeout: 45_000 });
+    assert.equal(await hero.locator(".live-window > .install-hook").count(), 1, "install controls belong to the terminal window");
+    assert.equal(await hero.locator(".live-screen .install-hook").count(), 0, "terminal connection overlays cannot cover the install controls");
+    assert.equal(await hero.locator(".live-stage dialog").count(), 0, "the terminal is used in place, never in a dialog");
+    if (process.env.HERO_LIVE === "1") await hero.locator('.live-window[data-phase="live"] .live-tile').first().waitFor({ timeout: 45_000 });
     await verifyWorkspaceLayout(hero, width);
     await hero.locator(".install-hook").screenshot({ path: `${artifacts}install-${baseline ? "before" : "after"}-${width}.png` });
     // Full-page capture scrolls away from the workspace and legitimately disposes
@@ -107,8 +105,7 @@ try {
       await hero.getByRole("status").filter({ hasText: "Invite sent" }).waitFor();
       assert.equal(submitted, "layout@example.com", "signup still posts the entered address");
       assert.equal(platform, "ios", "a computer is offered the iPhone beta first");
-      assert.ok(await input.evaluate(node => Boolean(node.closest(".live-primary"))), "email entry is inside the terminal");
-      assert.equal(await hero.locator(".live-terminal-dialog[open]").count(), 0, "copy/signup do not open or type into the terminal");
+      assert.ok(await input.evaluate(node => Boolean(node.closest(".live-window"))), "email entry is inside the terminal window");
       await verifyWorkspaceLayout(hero, width);
       await hero.getByRole("button", { name: "Android instead", exact: true }).click();
       assert.equal(await hero.getByRole("button", { name: "Android", exact: true }).getAttribute("aria-pressed"), "true", "the mobile target follows the chosen phone");
@@ -119,16 +116,14 @@ try {
       await verifyWorkspaceLayout(hero, width);
     }
     if (process.env.HERO_LIVE === "1") {
-      await hero.locator(".live-primary .live-pane-preview").click();
-      const dialog = hero.getByRole("dialog", { name: "Live PHUX workspace" });
-      await dialog.getByRole("button", { name: "Split terminal ＋", exact: true }).click();
-      await dialog.locator(".live-pane-tabs button").nth(2).waitFor();
-      await dialog.getByRole("button", { name: "Split terminal ＋", exact: true }).click();
-      await dialog.locator(".live-pane-tabs button").nth(3).waitFor();
-      await dialog.getByRole("button", { name: "Close terminal view" }).click();
-      await hero.locator(".live-satellite-grid[data-count='3']").waitFor();
+      // A split happens in place: same window, one more pane, no new surface.
+      const before = await hero.locator(".live-tile").count();
+      await hero.getByRole("button", { name: "Split down", exact: true }).click();
+      await hero.locator(".live-tile").nth(before).waitFor();
+      await hero.getByRole("button", { name: "Close pane", exact: true }).click();
+      await assertCount(hero, before);
       await verifyWorkspaceLayout(hero, width);
-      await page.screenshot({ path: `${artifacts}four-terminals-${width}.png` });
+      await page.screenshot({ path: `${artifacts}split-${width}.png` });
     }
     await context.close();
   }

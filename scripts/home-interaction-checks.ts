@@ -124,7 +124,7 @@ export async function verifyWorkspaceResize(page: Page) {
 export async function verifyWorkspaceInstallCopy(page: Page) {
   const live = page.frameLocator("#home-light iframe");
   const hookLine = live.locator(".install-hook-line code");
-  assert.equal(await live.locator(".live-primary > .install-hook").count(), 1, "install controls follow their terminal rather than an external CTA slot");
+  assert.equal(await live.locator(".live-window > .install-hook").count(), 1, "install controls follow their terminal rather than an external CTA slot");
   assert.equal(await hookLine.innerText(), "curl -fsSL https://phux.sh/install | sh", "the live hero leads with the CLI install");
   // Keep the clipboard asynchronous so reading before copy completion fails reliably.
   await hookLine.evaluate(() => {

@@ -1,151 +1,105 @@
-.vibe-stage.live-session-stage{height:auto;min-height:100svh;display:grid;align-items:center;padding:72px max(24px,4.5vw) 76px;background:#0a0a0a;overflow:clip}
-/* Embedded, the stage fills its frame: the frame can then only grow, never reflow the page back up. */
-.embedded-home .vibe-stage.live-session-stage{min-height:100svh}
-.live-session-layout{position:relative;z-index:4;width:min(1120px,100%);margin:auto;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(220px,.85fr);gap:24px;align-items:center}
-.live-glass{position:relative;min-width:0;border:0;border-radius:22px;background:linear-gradient(135deg,#b1ddef0d,transparent 60%),#07151d24;backdrop-filter:blur(7px);box-shadow:0 22px 80px #0002;overflow:hidden}
-.live-glass header{height:46px;padding:0 19px;display:flex;align-items:center;justify-content:space-between;gap:10px;color:#bdd5e2;font:12px var(--lab-mono)}
-.live-glass header>span{display:flex;gap:9px;align-items:center}
-.live-glass header small{font-size:10px;letter-spacing:1px;color:#91aebaa8;white-space:nowrap}
-.live-status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#b5ceaa;box-shadow:0 0 9px #b5ceaa30;flex-shrink:0}
-.live-status-dot.is-waiting{background:#a5b2bf;box-shadow:none}
-.live-pane-body{position:relative}
-.live-pane-preview{position:relative;display:block;width:100%;padding:8px 18px 16px;text-align:left;cursor:pointer;overflow:hidden}
-.live-primary :is(.live-pane-preview,.live-connection-state){height:216px}
-.live-pane-preview canvas{display:block;width:100%;height:100%;pointer-events:none;opacity:.95}
-.live-enter{position:absolute;right:17px;bottom:12px;font:12px var(--lab-mono);color:#afc8d1aa;opacity:0;transition:opacity .2s}
-.live-pane-preview:hover .live-enter,.live-pane-preview:focus-visible .live-enter{opacity:1}
-.live-primary>footer{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 19px;font:10px var(--lab-mono);letter-spacing:.5px;color:#a1bfcea8}
-.live-satellite-grid{display:grid;gap:16px;align-self:center}
-/* An unallocated satellite is not an invisible terminal-sized spacer. */
-.live-satellite-grid:empty{display:none}
-.live-session-layout:has(.live-satellite-grid:empty){grid-template-columns:minmax(0,1fr);max-width:760px}
-.live-secondary header{height:40px;padding-inline:18px;font-size:11px}.live-secondary header small{font-size:10px;letter-spacing:.5px}
-.live-secondary .live-pane-preview{height:108px;padding:6px 16px 12px}
-@media(min-width:1000px){.live-satellite-grid[data-count="3"] .live-pane-preview{height:108px}}
-.live-particle-links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
-.live-connection-state{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;color:#b8cbd5;font:13px var(--lab-mono)}
-.live-connection-state button{padding:10px 16px;border:1px solid #b9d4e533;border-radius:4px;font-size:12px}
-.live-source-home{position:absolute;left:-20000px;top:0;width:1200px;height:700px;overflow:hidden;pointer-events:none}
-.live-source-surface{position:relative;width:max-content;max-width:none;line-height:0}
-.live-source-surface canvas{display:block;max-width:none;outline:none;touch-action:none}
-.live-terminal-dialog{width:min(1120px,calc(100vw - 48px));max-height:calc(100svh - 48px);padding:0;border:0;border-radius:32px;background:linear-gradient(125deg,#d9efff09,transparent 60%),#09172224;color:#d6e6ee;overflow:auto;box-shadow:0 30px 120px #0004;backdrop-filter:blur(1.5px) saturate(1.1)}
-.live-terminal-dialog::backdrop{background:#02070b12}
-.live-terminal-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:54px;padding:6px 16px}
-.live-pane-tabs{display:flex;gap:8px;overflow:auto}.live-pane-tabs button{padding:10px 11px;color:#8099a9;font:12px var(--lab-mono);white-space:nowrap;border-radius:4px;display:flex;gap:8px;align-items:center}
-.live-pane-tabs button[aria-pressed=true]{color:#dcecf2;background:#c8e6f20a}.live-pane-tabs button i{width:3px;height:3px;border-radius:50%;background:currentColor}
-.live-dialog-close{font:26px var(--lab-mono);color:#b4cbd5;width:36px;height:36px;flex-shrink:0;border-radius:4px}.live-dialog-close:hover{background:#c8e6f212}
-.live-terminal-target{position:relative;height:clamp(200px,32svh,340px);margin:20px 22px 12px;overflow:hidden;outline:none}
-.live-terminal-target canvas{border:0;background:transparent}
-.live-terminal-dialog>footer{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:0 22px 15px}
-.live-command-shortcuts{display:flex;gap:8px;flex-wrap:wrap}.live-command-shortcuts button,.live-split{display:inline-flex;gap:15px;align-items:center;padding:9px 12px;border:0;border-radius:18px;font:12px var(--lab-mono);color:#a8c4d3;background:#b8dbec04}
-.live-command-shortcuts button:hover,.live-split:hover{background:#b8dbec10;color:#e0eff5}.live-command-shortcuts span{font-size:12px;color:#7895a5}
-.live-dialog-caption{display:flex;justify-content:space-between;gap:12px;padding:14px 22px;font:11px var(--lab-mono);color:#87a4b4}.live-dialog-caption>span:first-child{display:flex;align-items:center;gap:8px}
-.live-action-error{padding:0 22px 15px;color:#deb69d;font:12px/1.6 var(--lab-mono)}
-@media(max-width:999px){.vibe-stage.live-session-stage{padding-top:56px;align-items:start}.live-session-layout{grid-template-columns:1fr;max-width:680px;gap:24px}.live-satellite-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;grid-row:auto;min-height:172px}.live-primary :is(.live-pane-preview,.live-connection-state){height:200px}.live-primary{max-width:100%}}
-@media(max-width:560px){.vibe-stage.live-session-stage{padding:32px 18px 72px}.live-primary :is(.live-pane-preview,.live-connection-state){height:176px}.live-glass header{padding-inline:15px}.live-satellite-grid{gap:20px}.live-secondary header{padding-inline:10px;font-size:11px}.live-secondary header small{display:none}.live-secondary .live-pane-preview{height:112px;padding-inline:10px}.live-satellite-grid{min-height:152px}.live-session-layout{gap:22px}.live-terminal-dialog{width:calc(100vw - 24px);max-height:calc(100svh - 24px)}.live-terminal-dialog>header{padding-inline:9px}.live-pane-tabs{gap:0}.live-pane-tabs button{font-size:11px;padding-inline:9px}.live-terminal-target{margin:14px 12px 10px;height:32svh}.live-terminal-dialog>footer{padding-inline:12px;gap:9px;flex-wrap:wrap}.live-command-shortcuts button,.live-split{font-size:11px;padding:8px 10px;gap:10px}.live-dialog-caption{padding:12px;font-size:10px}}
-@media(prefers-reduced-motion:reduce){.live-enter{transition:none}}
-
-.live-reconnect{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#0b141ee8;z-index:5;font:12px/1.7 var(--lab-mono);padding:22px;text-align:center;color:#b9d1dc}.live-reconnect button{padding:10px 14px;border:1px solid #b9d4e533;border-radius:4px}
-
-.live-terminal-target .live-source-surface{position:absolute;left:0;top:0}
-
-.live-session-stage[data-phase=closed] .live-status-dot,.live-session-stage[data-phase=error] .live-status-dot{background:#83929e;box-shadow:none}
-
-/* Fade the light itself, not the controls, into the surrounding page. */
-.live-session-stage>.vibe-universe{inset:0;mask-image:linear-gradient(180deg,transparent,#000 14%,#000 76%,transparent)}
-.live-session-stage::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 18% 30%,#39bfc224,transparent 56%),radial-gradient(ellipse at 84% 56%,#8270e62b,transparent 60%);mask-image:linear-gradient(180deg,transparent,#000 18%,#000 70%,transparent)}
-.live-session-stage>.vibe-shade{background:linear-gradient(180deg,#0a0a0a,transparent 18%,transparent 74%,#0a0a0a),linear-gradient(90deg,#0a0a0a33,transparent 32%)}
-.live-session-stage>.vibe-universe .gpu-scene{pointer-events:none}
-.live-session-stage:has(.gpu-scene[data-renderer^="vgpu"]) .live-glass{backdrop-filter:none}
-.live-session-stage:has(.gpu-scene[data-renderer^="vgpu"]) .live-glass{background:transparent;box-shadow:none}
-.live-session-stage.has-terminal-open .live-session-layout{opacity:0;pointer-events:none}
-.live-session-layout{transition:opacity .25s}
-.live-terminal-dialog .live-pane-tabs button{border-radius:18px}
-.live-glass:hover .live-enter{color:#d6f3ff}
-.live-pane-preview:focus-visible,.live-pane-tabs button:focus-visible,.live-command-shortcuts button:focus-visible,.live-split:focus-visible{outline:2px solid #d6f3ff99;outline-offset:-3px}
-
-/* Living topology owns every glass transform: no CSS animation may hold one. */
-.live-primary{animation:liquid-arrive .7s both}
-.live-secondary{opacity:0;transform-origin:center;will-change:transform,opacity}
-@media(max-width:999px){.live-satellite-grid>.live-secondary:last-child:nth-child(odd){grid-column:1/-1;width:calc((100% - 22px)/2);justify-self:center}}
-@media(max-width:560px){.live-satellite-grid>.live-secondary:last-child:nth-child(odd){width:calc((100% - 20px)/2)}}
-/* One companion reads as a compact terminal strip, not half an empty row. */
-@media(max-width:999px){.live-satellite-grid[data-count="1"]{grid-template-columns:minmax(0,1fr);min-height:0}.live-satellite-grid[data-count="1"]>.live-secondary:last-child{grid-column:auto;width:100%;justify-self:stretch}.live-satellite-grid[data-count="1"] .live-pane-preview{height:80px}}
-.live-terminal-dialog[open]{animation:liquid-open .64s cubic-bezier(.2,.85,.2,1) both;transform-origin:center}
-.live-terminal-dialog.is-returning{animation:liquid-return .44s cubic-bezier(.55,0,.8,.35) both;pointer-events:none}
-.live-pane-tabs button{animation:liquid-tab .45s cubic-bezier(.2,.8,.2,1) both}
-.live-command-shortcuts button,.live-split,.live-dialog-close{transition:transform .22s,background .22s,color .22s}
-.live-command-shortcuts button:active,.live-split:active,.live-dialog-close:active{transform:scale(.91)}
-@keyframes liquid-arrive{from{opacity:0}to{opacity:1}}
-@keyframes liquid-open{from{opacity:.3;transform:translate(var(--liquid-origin-x,0px),var(--liquid-origin-y,0px)) scale(var(--liquid-origin-scale-x,.85),var(--liquid-origin-scale-y,.85))}to{opacity:1;transform:translate(0,0) scale(1)}}
-@keyframes liquid-return{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:.05;transform:translate(var(--liquid-origin-x,0px),var(--liquid-origin-y,0px)) scale(var(--liquid-origin-scale-x,.85),var(--liquid-origin-scale-y,.85))}}
-@keyframes liquid-tab{from{opacity:0;transform:translateY(5px) scale(.88)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.live-primary,.live-terminal-dialog[open],.live-pane-tabs button{animation:none}.live-command-shortcuts button,.live-split,.live-dialog-close{transition:none}}
-
-@media(min-width:700px) and (max-width:999px){.live-satellite-grid[data-count="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}.live-satellite-grid[data-count="3"]>.live-secondary:last-child{grid-column:auto;width:auto;justify-self:stretch}}
-@media(min-width:561px) and (max-width:699px){.vibe-stage.live-session-stage{padding-top:66px;padding-bottom:64px}.live-session-layout{gap:24px}.live-secondary .live-pane-preview{height:120px}.live-satellite-grid{min-height:160px}}
-
-@media(hover:none){.live-enter{opacity:1;color:#cfe6ee}}
-
-/* Commands and signup are native controls inside the primary terminal frame. */
-.install-hook{position:relative;z-index:4;min-width:0;display:grid;gap:8px;padding:0 18px;color:#c9dbe3}
-.install-hook-tabs{display:flex;gap:4px}
-.install-hook-tabs button{min-height:36px;padding:0 14px;border-radius:999px;font:13px var(--lab-mono);color:#86a2b1;transition:color .2s,background .2s}
-.install-hook-tabs button:hover{color:#dcecf2}
-.install-hook-tabs button[aria-pressed=true]{color:#e6f3f8;background:#c8e6f212}
-.install-hook-line{position:relative;display:flex;align-items:center;gap:10px;min-height:44px;padding:0;border:0;background:transparent}
-.install-hook-prompt{font:15px var(--lab-mono);color:#b5ceaa}
-.install-hook-line code{flex:1;min-width:0;font:13px/1.5 var(--lab-mono);color:#eef7fa;white-space:nowrap;overflow-x:auto;scrollbar-width:none;user-select:all;cursor:copy}
-.install-hook-line code::-webkit-scrollbar{display:none}
-.install-hook-copy,.install-hook-request button{flex-shrink:0;min-width:56px;min-height:44px;padding:0 12px;border-radius:12px;background:#dff4fb;color:#06121a;font:600 12px var(--font-reading);transition:transform .18s,background .2s,box-shadow .3s}
-.install-hook-copy:hover,.install-hook-request button:hover{background:#fff}
-.install-hook-copy:active,.install-hook-request button:active{transform:scale(.96)}
-.install-hook-line[data-copied=true] .install-hook-copy{background:#b5ceaa}
-.install-hook-status{min-height:1.5em;margin:0;font:13px/1.5 var(--lab-mono);color:#91aebd}
-.install-hook-status:empty{position:absolute;width:1px;height:1px;min-height:0;overflow:hidden;clip-path:inset(50%)}
-.install-hook-status:has(.install-hook-alt){display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.install-hook-alt{flex-shrink:0;min-height:32px;padding:0;font:13px var(--lab-mono);color:#b9d3df;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#b9d3df55}
-.install-hook-alt:hover{color:#eef7fa}
-.install-hook-what{flex:1;min-width:0;font:13px/1.5 var(--lab-mono);color:#eef7fa}
-a.install-hook-copy{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-.install-hook-share{justify-self:start;min-height:40px;padding:0 16px;border-radius:999px;box-shadow:inset 0 0 0 1px #c8e6f230;font:14px var(--font-reading);color:#dcecf2}
-.install-hook-request{flex-wrap:nowrap;gap:8px}
-.install-hook-request button{width:44px;min-width:44px;padding:0;font:24px var(--lab-mono)}
-.install-hook-request input{appearance:none;-webkit-appearance:none;box-sizing:border-box;flex:1 1 0;min-width:0;min-height:44px;padding:0 4px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#eef7fa;font:16px var(--font-reading)}
-.install-hook-request input::placeholder{color:#7f99a7}
-.install-hook-request .install-hook-trap{position:absolute;left:-10000px;width:1px;height:1px;opacity:0}
-.install-hook :is(button,a,input,code):focus-visible{outline:2px solid #d6f3ffaa;outline-offset:2px}
-.install-hook[data-moment=engaged] .install-hook-copy,.install-hook[data-moment=drove] .install-hook-copy{animation:install-breathe 2.4s ease-in-out .4s 2}
-@keyframes install-breathe{50%{box-shadow:0 0 0 6px #dff4fb1f,0 0 28px #bfe6f533}}
-.live-dialog-install{margin-left:auto;padding:6px 12px;border-radius:999px;background:#dff4fb;color:#06121a;font:600 12px var(--font-reading)}
-.live-dialog-install:hover{background:#fff}
-.live-dialog-caption{align-items:center}
-@media(max-width:560px){
-  .install-hook{padding-inline:14px}
-  .install-hook-line code,.install-hook-what{white-space:normal;overflow-wrap:anywhere;font-size:12px}
-  .install-hook-share{justify-self:stretch;min-height:46px}
-  .live-dialog-caption>span:nth-child(2){display:none}
+/* The browser demo: one glass window over the light, holding the real phux client. */
+.vibe-stage.live-stage {
+  --ink: #e9f1f4; --dim: #8fa5b1; --rule: #d6ebf61a; --accent: #9fd6a0;
+  height: auto; min-height: 100svh; display: grid; place-items: center;
+  padding: 56px max(16px, 4vw); background: #0a0a0a; overflow: clip;
+  font-family: var(--font-reading, Inter, system-ui, sans-serif);
 }
-@media(prefers-reduced-motion:reduce){.install-hook-copy{animation:none!important}.install-hook-tabs button,.install-hook-copy{transition:none}}
+.embedded-home .vibe-stage.live-stage { min-height: 100svh; }
+.live-stage .vibe-universe { inset: 0; mask-image: linear-gradient(180deg, transparent, #000 14%, #000 80%, transparent); }
+.live-stage .vibe-shade { background: linear-gradient(180deg, #0a0a0a, transparent 20%, transparent 76%, #0a0a0a); }
+.live-stage .scene-canvas { opacity: 1; }
 
-/* Sharp pass: the panes are real terminals, so they get a real body. The light
-   stays behind them; text never sits on a blurred or transparent surface. */
-.live-session-stage .live-glass,.live-session-stage:has(.gpu-scene[data-renderer^="vgpu"]) .live-glass{border-radius:14px;background:linear-gradient(180deg,#151c23f5,#0b1116f7);backdrop-filter:none;box-shadow:inset 0 0 0 1px #d4e8f41c,inset 0 1px 0 #ffffff1f,0 1px 2px #000a,0 28px 70px -24px #000d}
-.live-session-stage .live-glass header{height:40px;padding:0 16px;border-bottom:1px solid #d4e8f412;color:#d5e3ea;font-size:12px}
-.live-session-stage .live-glass header small{letter-spacing:0;font-size:11px;color:#8ea5b1;text-transform:lowercase}
-.live-session-stage .live-pane-preview{padding:12px 16px 14px}
-.live-session-stage .live-pane-preview canvas{opacity:1}
-.live-session-stage .live-secondary .live-pane-preview{height:132px;padding:10px 14px 12px}
-.live-session-stage .live-primary>footer{height:34px;padding:0 16px;border-top:1px solid #d4e8f412;color:#8ea5b1;letter-spacing:0;font-size:11px;text-transform:lowercase}
-.live-session-stage .install-hook{padding:10px 16px 12px;border-top:1px solid #d4e8f412}
-.live-session-stage .install-hook-copy,.live-session-stage .install-hook-request button{border-radius:8px;background:#e7e2da;color:#111417}
-.live-session-stage .install-hook-tabs button{border-radius:7px;min-height:32px;padding:0 12px}
-.live-session-stage>.vibe-shade{background:linear-gradient(180deg,#0a0a0a,#0a0a0a66 22%,#0a0a0a66 72%,#0a0a0a),linear-gradient(90deg,#0a0a0a55,transparent 40%)}
-.live-session-layout{gap:16px;align-items:start}
-.live-satellite-grid{gap:16px;align-self:start}
-.live-terminal-dialog{border-radius:16px;background:linear-gradient(180deg,#151c23fa,#0b1116fc);backdrop-filter:none;box-shadow:inset 0 0 0 1px #d4e8f41c,inset 0 1px 0 #ffffff1f,0 40px 120px -20px #000}
-.live-terminal-dialog::backdrop{background:#04070ab8}
-.live-terminal-dialog>header{border-bottom:1px solid #d4e8f412}
-.live-terminal-dialog .live-pane-tabs button,.live-command-shortcuts button,.live-split{border-radius:7px}
-.live-command-shortcuts button,.live-split{background:#d4e8f40d;box-shadow:inset 0 0 0 1px #d4e8f414}
-.live-dialog-install{border-radius:8px;background:#e7e2da;color:#111417}
+.live-window {
+  position: relative; width: min(1040px, 100%); min-width: 0; color: var(--ink);
+  border-radius: 16px; overflow: clip;
+  background: linear-gradient(180deg, #121a21b8, #090e13cc);
+  backdrop-filter: blur(22px) saturate(1.35);
+  box-shadow: inset 0 0 0 1px var(--rule), inset 0 1px 0 #ffffff24, 0 1px 2px #0009, 0 40px 90px -30px #000e;
+}
+.live-window button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.live-window button:disabled { cursor: default; }
+.live-window :is(button, a):focus-visible { outline: 2px solid #d6f3ffaa; outline-offset: 2px; }
+
+.live-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 44px; padding: 0 8px 0 16px; box-shadow: 0 1px 0 var(--rule); }
+.live-title { display: flex; align-items: center; gap: 8px; margin: 0; min-width: 0; font-size: 13px; letter-spacing: -.01em; white-space: nowrap; }
+.live-title i { width: 7px; height: 7px; border-radius: 50%; background: #5d6f7a; transition: background .3s, box-shadow .3s; }
+.live-window[data-phase="live"] .live-title i { background: var(--accent); box-shadow: 0 0 0 3px #9fd6a022; }
+.live-window[data-phase="closed"] .live-title i { background: #d9a05b; }
+.live-title b { font-weight: 600; }
+.live-title span { color: var(--dim); }
+.live-tools { display: flex; align-items: center; gap: 2px; }
+.live-count { margin-right: 8px; color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+.live-tools button { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: #b9ccd6; transition: background .15s, color .15s, opacity .15s, transform .1s; }
+.live-tools button:not(:disabled):hover { background: #d6ebf614; color: #fff; }
+.live-tools button:not(:disabled):active { transform: scale(.94); }
+.live-tools button:disabled { opacity: .3; }
+
+.live-screen { position: relative; display: grid; place-items: center; height: 408px; padding: 12px; overflow: hidden; background: #05090c80; }
+.live-grid { position: relative; line-height: 0; }
+.live-canvas { position: relative; z-index: 1; display: block; outline: none; cursor: text; }
+.live-window:not([data-phase="live"]) .live-grid { visibility: hidden; }
+.live-tile {
+  position: absolute; box-sizing: border-box; pointer-events: none;
+  transition: left .28s cubic-bezier(.2, .9, .25, 1), top .28s cubic-bezier(.2, .9, .25, 1), width .28s cubic-bezier(.2, .9, .25, 1), height .28s cubic-bezier(.2, .9, .25, 1);
+  animation: live-tile-in .32s ease-out both;
+}
+/* Dividers sit in the one-cell gap the multiplexer leaves between panes. */
+.live-tile[data-left="true"] { border-left: 1px solid var(--rule); }
+.live-tile[data-top="true"] { border-top: 1px solid var(--rule); }
+.live-tile::after { content: ""; position: absolute; inset: 2px; border-radius: 7px; background: #d6ebf600; box-shadow: inset 0 0 0 1px #d6ebf600; transition: background .2s, box-shadow .2s; }
+.live-grid:not([data-panes="1"]) > .live-tile[data-focused="true"]::after { background: #d6ebf60b; box-shadow: inset 0 0 0 1px #d6ebf61f; }
+@keyframes live-tile-in { from { opacity: 0; } }
+
+.live-status { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 24px; text-align: center; }
+.live-status p { margin: 0; color: var(--dim); font-size: 14px; }
+.live-status button { min-height: 40px; padding: 0 16px; border-radius: 9px; background: #e7e2da; color: #111417; font-weight: 600; font-size: 13px; }
+.live-status button:hover { background: #fff; }
+
+.live-foot { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 16px; box-shadow: 0 -1px 0 var(--rule); color: var(--dim); font-size: 12px; }
+.live-foot > span { margin-right: 4px; }
+.live-foot button { min-height: 28px; padding: 0 10px; border-radius: 7px; box-shadow: inset 0 0 0 1px var(--rule); color: #cfe0e8; font: 12px var(--lab-mono, ui-monospace, monospace); transition: background .15s, color .15s, opacity .15s; }
+.live-foot button:not(:disabled):hover { background: #d6ebf614; color: #fff; }
+.live-foot button:disabled { opacity: .4; }
+.live-foot kbd { margin-left: auto; padding: 3px 7px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--rule); color: var(--dim); font: 11px var(--lab-mono, ui-monospace, monospace); cursor: help; }
+
+/* Install controls: the tray at the bottom of the same window. */
+.install-hook { position: relative; min-width: 0; display: grid; gap: 6px; padding: 10px 16px 12px; box-shadow: 0 -1px 0 var(--rule); color: #c9dbe3; }
+.install-hook-tabs { display: flex; gap: 4px; }
+.install-hook-tabs button { min-height: 32px; padding: 0 12px; border-radius: 7px; font: 13px var(--lab-mono, ui-monospace, monospace); color: #86a2b1; transition: color .2s, background .2s; }
+.install-hook-tabs button:hover { color: #dcecf2; }
+.install-hook-tabs button[aria-pressed="true"] { color: #e6f3f8; background: #c8e6f212; }
+.install-hook-line { position: relative; display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.install-hook-prompt { font: 15px var(--lab-mono, ui-monospace, monospace); color: #b5ceaa; }
+.install-hook-line code { flex: 1; min-width: 0; font: 13px/1.5 var(--lab-mono, ui-monospace, monospace); color: #eef7fa; white-space: nowrap; overflow-x: auto; scrollbar-width: none; user-select: all; cursor: copy; }
+.install-hook-line code::-webkit-scrollbar { display: none; }
+.live-window :is(.install-hook-copy, .install-hook-request button) { flex-shrink: 0; min-width: 56px; min-height: 44px; padding: 0 12px; border-radius: 8px; background: #e7e2da; color: #111417; font: 600 12px var(--font-reading); transition: transform .18s, background .2s; }
+.live-window :is(.install-hook-copy, .install-hook-request button):hover { background: #fff; }
+.live-window :is(.install-hook-copy, .install-hook-request button):active { transform: scale(.96); }
+.live-window .install-hook-line[data-copied="true"] .install-hook-copy { background: #b5ceaa; }
+.install-hook-status { min-height: 1.5em; margin: 0; font: 13px/1.5 var(--lab-mono, ui-monospace, monospace); color: #91aebd; }
+.install-hook-status:empty { position: absolute; width: 1px; height: 1px; min-height: 0; overflow: hidden; clip-path: inset(50%); }
+.install-hook-status:has(.install-hook-alt) { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.live-window .install-hook-alt { flex-shrink: 0; min-height: 32px; padding: 0; font: 13px var(--lab-mono, ui-monospace, monospace); color: #b9d3df; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #b9d3df55; }
+.live-window .install-hook-alt:hover { color: #eef7fa; }
+.install-hook-what { flex: 1; min-width: 0; font: 13px/1.5 var(--lab-mono, ui-monospace, monospace); color: #eef7fa; }
+a.install-hook-copy { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.live-window .install-hook-share { justify-self: start; min-height: 40px; padding: 0 16px; border-radius: 999px; box-shadow: inset 0 0 0 1px #c8e6f230; font: 14px var(--font-reading); color: #dcecf2; }
+.install-hook-request { flex-wrap: nowrap; gap: 8px; }
+.live-window .install-hook-request button { width: 44px; min-width: 44px; padding: 0; font: 24px var(--lab-mono, ui-monospace, monospace); }
+.install-hook-request input { appearance: none; -webkit-appearance: none; box-sizing: border-box; flex: 1 1 0; min-width: 0; min-height: 44px; padding: 0 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: #eef7fa; font: 16px var(--font-reading); }
+.install-hook-request input::placeholder { color: #7f99a7; }
+.install-hook-request .install-hook-trap { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
+
+@media (max-width: 700px) {
+  .vibe-stage.live-stage { padding: 20px 12px; }
+  .live-screen { height: 296px; padding: 10px; }
+  .live-count, .live-foot > span { display: none; }
+  .live-tools button { width: 40px; height: 40px; }
+  .live-foot button { min-height: 36px; }
+  .install-hook-line code, .install-hook-what { white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
+  .live-window .install-hook-share { justify-self: stretch; min-height: 46px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-tile, .live-window button, .live-title i { transition: none; animation: none; }
+}
