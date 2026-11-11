@@ -83,6 +83,7 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "remote.md", slug: "remote", group: "connect", order: 0 },
   { file: "clients.md", slug: "clients", group: "connect", order: 1 },
   { file: "native-terminal.md", slug: "native-terminal", group: "connect", order: 0.5 },
+  { file: "hub-mail.md", slug: "hub-mail", group: "connect", order: 0.6 },
   { file: "enterprise.md", slug: "enterprise", group: "connect", order: 2, title: "Organizations" },
   { file: "audit.md", slug: "audit", group: "connect", order: 2.5 },
   // Hub for driving phux. A checkout without the file skips it.
@@ -101,6 +102,7 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "troubleshooting.md", slug: "troubleshooting", group: "help", order: 0 },
   { file: "architecture.md", slug: "architecture", group: "internals", order: 0 },
   { file: "resource-kinds.md", slug: "resource-kinds", group: "internals", order: 0.25 },
+  { file: "mirrors.md", slug: "mirrors", group: "internals", order: 0.3 },
   { file: "authority.md", slug: "authority", group: "internals", order: 0.27, title: "Authority over pages, windows, and displays" },
   { file: "applications.md", slug: "applications", group: "internals", order: 0.3, title: "Applications as resources" },
   { file: "libghostty.md", slug: "libghostty", group: "internals", order: 0.5, title: "A terminal multiplexer built on libghostty — phux" },
