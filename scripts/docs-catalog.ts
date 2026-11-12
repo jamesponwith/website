@@ -82,6 +82,7 @@ const ORIENTATION: { file: string; slug: string; group: Group; order: number; ti
   { file: "acp.md", slug: "acp", group: "automate", order: 3 },
   { file: "approvals.md", slug: "approvals", group: "automate", order: 2.5 },
   { file: "remote.md", slug: "remote", group: "connect", order: 0 },
+  { file: "ssh.md", slug: "ssh", group: "connect", order: 0.5 },
   { file: "clients.md", slug: "clients", group: "connect", order: 1 },
   { file: "native-terminal.md", slug: "native-terminal", group: "connect", order: 0.5 },
   { file: "hub-mail.md", slug: "hub-mail", group: "connect", order: 0.6 },
