@@ -8,7 +8,7 @@ const script = page.match(/<script is:inline>([\s\S]*?)<\/script>/)![1]!;
 const token = "a".repeat(64);
 const fp = "b".repeat(64);
 
-function render(query: string) {
+function render(query: string, hash = "") {
   const elements = new Map<string, any>();
   for (const id of ["lede", "bad", "details", "install", "name-row", "fp-row", "server", "name", "fp", "open", "recover", "pairing-link"]) {
     elements.set(id, {
@@ -17,7 +17,7 @@ function render(query: string) {
       addEventListener(_: string, listener: (event: any) => void) { this.submit = listener; },
     });
   }
-  const location = { search: query, pathname: "/connect", href: "" };
+  const location = { search: query, hash, pathname: "/connect", href: "" };
   const history: string[] = [];
   runInNewContext(script, {
     URL, URLSearchParams,
@@ -95,6 +95,40 @@ describe("pairing page", () => {
     elements.get("recover").submit({ preventDefault() {} });
     expect(location.href).toBe("");
     expect(elements.get("bad").hidden).toBe(false);
+  });
+
+  // Current `phux pair` keeps the secrets in the fragment, which the browser
+  // never sends; the public fields stay in the query.
+  test.each(supported)("reads secrets from the fragment for %j", (fields) => {
+    const { enroll, ...rest } = fields;
+    const search = `?${new URLSearchParams({ fp, ...rest })}`;
+    const hash = `#${new URLSearchParams({ ...(enroll ? { enroll } : {}), token })}`;
+    const { elements, history } = render(search, hash);
+    expect(elements.get("details").hidden).toBe(false);
+    expect(elements.get("bad").hidden).toBe(true);
+    expect(elements.get("open").attributes.href).toBe(`phux://connect${search}${hash}`);
+    expect(history).toEqual(["/connect"]);
+  });
+
+  test.each([
+    [query({ url: "wss://mac.example:8787" }), `#token=${token}`],
+    [`?url=wss://mac.example:8787&fp=${fp}`, `#token=${token}&token=other`],
+    [`?url=wss://mac.example:8787&fp=${fp}`, "#enroll=" + "c".repeat(64)],
+    [`?fp=${fp}`, `#url=wss://mac.example:8787&url=wss://evil.example:8787&token=${token}`],
+  ])("rejects a fragment that repeats or lacks a field and still scrubs: %s %s", (search, hash) => {
+    const { elements, history } = render(search, hash);
+    expect(elements.get("bad").hidden).toBe(false);
+    expect(elements.get("open").attributes.href).toBeUndefined();
+    expect(history).toEqual(["/connect"]);
+  });
+
+  test("recovers a pasted link whose secrets are in the fragment", () => {
+    const { elements, location } = render("");
+    const link = `?url=wss://mac.example:8787&fp=${fp}#token=${token}`;
+    elements.get("pairing-link").value = `https://phux.sh/connect${link}`;
+    elements.get("recover").submit({ preventDefault() {} });
+    expect(location.href).toBe(`phux://connect${link}`);
+    expect(elements.get("bad").hidden).toBe(true);
   });
 
   test("preserves CLI percent encoding and literal plus signs", () => {

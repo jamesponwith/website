@@ -30,6 +30,15 @@ describe("association document", () => {
     expect(paths).toContain("/connect?*");
   });
 
+  // The secrets ride the fragment (`/connect?url=…#token=…`). A component
+  // with a "#" (or "?") key would stop matching some real links; omitted keys
+  // match anything.
+  test("does not constrain the query or the fragment", () => {
+    for (const c of associationDocument().applinks.details[0]?.components ?? []) {
+      expect(Object.keys(c).sort()).toEqual(["/", "comment"]);
+    }
+  });
+
   // Claiming a domain routes every matching https URL into the app. The
   // marketing pages, docs and install funnel must stay in the browser.
   test("claims nothing outside the pairing path", () => {

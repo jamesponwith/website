@@ -112,8 +112,10 @@
   </p>
   <p>
     <strong>Pairing links.</strong> When a <code>phux.sh/connect</code> pairing link opens in a browser instead of the app, the page reads the
-    link on your device and removes the token from the address bar. The
-    page loads no analytics script, and our analytics record only the
-    path, never the token.
+    link on your device and removes the token from the address bar.
+    Links from current phux versions keep the token after the
+    <code>#</code>, which browsers never send to our server. The page
+    loads no analytics script, and our analytics record only the path,
+    never the token.
   </p>
 </section>

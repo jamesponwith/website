@@ -7,10 +7,15 @@
 // did not happen: the app is not installed, the association has not been
 // fetched yet, or the link was opened on a desktop.
 //
-// The URL carries a bearer token, so this page is built to leak it nowhere:
-// no analytics script, no outbound referrer, noindex, and the token is
-// dropped from the address bar as soon as the page has read it. Nothing is
-// ever sent to the server — the whole exchange is local to the device.
+// The link carries a bearer token and an enrollment ticket. Current `phux pair`
+// puts both after `#`, and a browser never sends the fragment, so loading this
+// page sends the server only the path and the public query (server address,
+// name, certificate pins). Links from older phux versions carry the secrets in
+// the query, and the browser sends that query to this site with the request,
+// before any script runs: those reach the server. Either way the page
+// loads no analytics script, sends no referrer, is noindex, and clears the
+// query and fragment from the address bar as soon as it has read them. The
+// script itself sends nothing anywhere: the handoff to the app is local.
 import { SITE } from "../lib/site";
 ---
 
@@ -19,7 +24,7 @@ import { SITE } from "../lib/site";
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <!-- The query carries a credential: keep it out of indexes and headers. -->
+    <!-- The link carries a credential: keep it out of indexes and headers. -->
     <meta name="robots" content="noindex,nofollow" />
     <meta name="referrer" content="no-referrer" />
     <meta name="theme-color" content="#08080b" />
@@ -133,17 +138,23 @@ import { SITE } from "../lib/site";
           document.getElementById(key).textContent = value || "";
         }
 
-        function readPairing(search) {
-          // The emitter percent-encodes spaces and treats a literal + as +,
-          // not HTML form encoding. Preserve its query bytes in the handoff.
-          var q = new URLSearchParams(search.replace(/\+/g, "%2B"));
+        function readPairing(search, hash) {
+          // The secrets ride the fragment (`?url=…#enroll=…&token=…`); older
+          // links put them in the query. Read both halves as one field list,
+          // so a field named in both is ambiguous, and hand the app the same
+          // two halves. The emitter percent-encodes spaces and treats a
+          // literal + as +, not HTML form encoding: preserve its bytes.
+          var query = search.replace(/^\?/, "");
+          var secret = (hash || "").replace(/^#/, "");
+          var fields = [query, secret].filter(Boolean).join("&");
+          var q = new URLSearchParams(fields.replace(/\+/g, "%2B"));
           var target = destination(q);
           if (!target || !unique(q, "token") || !unambiguous(q)) {
             lede.textContent = "That link is incomplete. Copy the whole link, including everything after the question mark.";
             show("bad");
             return null;
           }
-          var deepLink = "phux://connect?" + search.replace(/^\?/, "");
+          var deepLink = "phux://connect?" + query + (secret ? "#" + secret : "");
           document.getElementById("server").textContent = target;
           optionalDetail(q, "name", "name-row");
           optionalDetail(q, "fp", "fp-row");
@@ -157,13 +168,15 @@ import { SITE } from "../lib/site";
 
         // Scrub even malformed links: a missing endpoint can still carry a
         // valid secret. Keep it only in memory, never storage or a request.
+        // The path alone drops both the query and the fragment.
         var search = window.location.search;
+        var hash = window.location.hash;
         try {
           window.history.replaceState({}, "", window.location.pathname);
         } catch (_) {
           /* history is unavailable in some embedded browsers; not fatal. */
         }
-        readPairing(search);
+        readPairing(search, hash);
 
         document.getElementById("recover").addEventListener("submit", function (event) {
           event.preventDefault();
@@ -174,7 +187,7 @@ import { SITE } from "../lib/site";
             var supported = link.protocol === "phux:" && link.hostname === "connect";
             var universal = link.protocol === "https:" && link.hostname === "phux.sh" && link.pathname === "/connect";
             if (!supported && !universal) throw new Error("Not a pairing link");
-            var deepLink = readPairing(link.search);
+            var deepLink = readPairing(link.search, link.hash);
             if (!deepLink) return;
             input.value = "";
             window.location.href = deepLink;
