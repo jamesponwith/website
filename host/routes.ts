@@ -44,6 +44,7 @@ export const DOCS_PREFIXES = [
   "/acp",
   "/approvals",
   "/remote",
+  "/ssh",
   "/native-terminal",
   "/hub-mail",
   "/enterprise",
